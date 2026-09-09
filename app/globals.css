@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/*
+  Design system — "contact sheet" concept.
+  Two registers:
+  - Ink (dark): admin/team tools — functional, dense, like a darkroom/lightroom utility.
+  - Paper (light): the public gallery + auth — warm, editorial, the moment a client sees their photos.
+*/
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-ink: #17181c;
+  --color-ink-soft: #1e1f24;
+  --color-ink-raised: #26272d;
+  --color-line: #35363d;
+  --color-line-soft: #2a2b31;
+  --color-ash: #9a9aa2;
+  --color-ash-dim: #6b6c74;
+  --color-bone: #edece8;
+
+  --color-paper: #f6f3ec;
+  --color-paper-dim: #eee9db;
+  --color-paper-line: #ddd6c3;
+  --color-clay: #837d6c;
+  --color-clay-dim: #a49e8c;
+  --color-plate: #201f1b;
+
+  --color-safelight: #d2472a;
+  --color-safelight-dim: #a83a22;
+  --color-safelight-tint: #f4ddd4;
+  --color-develop: #2f6e62;
+  --color-develop-dim: #24534a;
+  --color-develop-tint: #dbe8e3;
+  --color-warn: #c98a2c;
+  --color-warn-tint: #f2e2c4;
+
+  --radius-proof: 3px;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-bone);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Public / paper register opts in explicitly */
+body.on-paper {
+  background: var(--color-paper);
+  color: var(--color-plate);
+  color-scheme: light;
+}
+
+::selection {
+  background: var(--color-safelight);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-safelight);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Utility: numbered index tag used on photo thumbnails, like a frame number on film */
+.frame-index {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
