@@ -73,10 +73,12 @@ export default function AdminEventDetail({ params }) {
   const handleAssign = async (userId) => {
     try {
       await eventsAPI.addTeamMember(id, userId);
-      setEvent((prev) => ({
-        ...prev,
-        teamMembers: [...(prev.teamMembers || []), userId],
-      }));
+      // Re-fetch rather than patch local state optimistically: the server
+      // returns teamMembers as populated {id, name, email} objects, and
+      // patching in a bare userId string here produced a mixed array that
+      // idOf()/assignedIds couldn't match on the next render (badge for the
+      // newly-assigned member would show blank until a manual reload).
+      await load();
     } catch (err) {
       toast.error(err.message || "Couldn't assign team member.");
     }

@@ -1,6 +1,10 @@
 import { idOf } from "@/lib/idOf";
 
 function photoUrl(photo) {
+  // gridfsId takes priority: once a photo is stored in GridFS it has to be
+  // streamed through /api/photos/[id]/file (no static path exists for it),
+  // whereas storageUrl/url/secure_url are all directly loadable as-is.
+  if (photo.gridfsId) return `/api/photos/${photo.id ?? photo._id}/file`;
   return photo.storageUrl || photo.url || photo.secure_url;
 }
 

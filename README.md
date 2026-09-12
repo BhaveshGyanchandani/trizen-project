@@ -1,111 +1,105 @@
-# Trizen Photo Ops — Frontend
+# Trizen Photo Ops
 
-Next.js (App Router, JavaScript) frontend for the Photo Sharing Platform
-challenge. Built against `docs/API_SPEC.md` from the project docs — **no
-backend is bundled here**; this repo is the client only, wired to talk to
-the Express API once it's deployed.
-
-## Stack
-
-Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · axios ·
-react-hook-form · yet-another-react-lightbox · self-hosted fonts via
-`@fontsource` (IBM Plex Sans/Mono, Fraunces — no Google Fonts network
-dependency, so it builds and renders identically offline).
+Full-stack submission for the TrizenAI Full Stack Internship Challenge —
+a photo-sharing platform. One Next.js app serves both the UI (App Router
+pages) and the API (`app/api/*` route handlers), backed by MongoDB via
+Mongoose. Same-origin by design, so there's no CORS to configure.
 
 ## Setup
 
 ```bash
 npm install
-cp .env.local.example .env.local
-npm run dev
+cp .env.local.example .env.local   # then fill in your own MONGODB_URL
+npm run seed                        # creates demo accounts + a sample gallery
+npm run dev                         # runs on http://localhost:5000
 ```
 
-Without a backend running, every screen still renders — API calls fail
-gracefully into empty states / toasts, so you can review the UI on its own.
+`.env.local.example` already has a freshly generated `JWT_SECRET` and the
+right `NEXT_PUBLIC_API_URL` — the only value you need to supply is your own
+`MONGODB_URL` (e.g. an Atlas connection string).
 
-## Connecting the real backend
+## Demo credentials
 
-This is the part that matters. Every network call in the app goes through
-**one file**: `lib/api.js`. Nothing else touches axios or fetch directly.
-To connect the deployed backend:
+After `npm run seed` (safe to re-run — everything is upserted):
 
-1. Set `NEXT_PUBLIC_API_URL` in `.env.local` (or your host's env vars) to
-   the backend's base URL, e.g. `https://trizen-photo-api.onrender.com/api`.
-2. On the backend, make sure `CLIENT_ORIGIN` / CORS allows this frontend's
-   origin **with credentials** — auth is an httpOnly JWT cookie
-   (`withCredentials: true` is already set in `lib/api.js`), so a wildcard
-   CORS origin won't work with cookies.
+| Role        | Email                | Password           |
+|-------------|-----------------------|---------------------|
+| Admin       | admin@trizen.demo     | Trizen@Admin123     |
+| Team member | team@trizen.demo      | Trizen@Team123      |
 
-That's it — no code changes needed if the backend matches `API_SPEC.md`.
-`lib/api.js` documents every route/payload it expects, and the interceptor
-unwraps the `{ success, data, message }` envelope from `RULES.md` so
-screens just get plain data or a plain `Error` with `.message` and
-`.status`.
+The seed also creates one event ("Arjun & Priya Wedding" — the PDF's own
+example) with 3 generated sample photos already uploaded and selected, and
+publishes its gallery at:
 
-### Where the frontend is defensive about shape
+- **Link**: `http://localhost:5000/gallery/abc123`
+- **PIN**: `482917`
 
-A couple of response fields aren't pinned down to an exact key in
-`API_SPEC.md`, so the frontend normalizes rather than assuming one shape:
+(Both values are the exact example ones from section 5 of the challenge
+PDF.) Log in as the team member to upload more photos, or the admin to
+select/publish — the seed just gets you a working starting point.
 
-- **`lib/idOf.js`** reads `id` or `_id`, since Mongoose docs use `_id` but
-  a controller might serialize to `id`.
-- **Publish gallery response** (`app/admin/events/[id]/page.jsx`) reads
-  `slug`/`pin` from the top level or a nested `gallery` object, and builds
-  the share URL from `slug` if no full `url`/`link` field is returned.
-- **Photo URLs** (`components/PhotoGrid.jsx`) read `storageUrl`, `url`, or
-  `secure_url` — covers both "raw Mongoose doc" and "Cloudinary-shaped"
-  responses.
-
-If the real backend returns something outside these, it's a one-line
-change in the relevant file, not a rewrite.
-
-## Structure
-
-Mirrors `docs/FRONTEND_STRUCTURE.md`:
+## Architecture
 
 ```
 app/
-├── (auth)/login, register       — public, paper theme
-├── admin/                        — guarded: role !== 'admin' → redirect
-│   ├── page.jsx                  — dashboard, create event
-│   ├── team/page.jsx             — add/list team members
-│   └── events/[id]/page.jsx      — assign team, select photos, publish
-├── team/                         — guarded: role !== 'team_member' → redirect
-│   ├── page.jsx                  — assigned events
-│   └── events/[id]/page.jsx      — upload, own uploads only
-└── gallery/[slug]/page.jsx       — public, no auth, PIN-gated
-components/                       — PhotoGrid, PhotoUploadForm, PinEntryForm,
-                                     EventCard, Navbar, + shared primitives
-lib/
-├── api.js                        — the integration seam (see above)
-├── useAuth.js                    — AuthProvider + useAuth(), one /auth/me fetch
-└── useToast.js                   — lightweight toast context
+├── api/                    — backend route handlers
+│   ├── auth/                 register, login, logout, me (JWT in an httpOnly cookie)
+│   ├── team-members/         admin adds/lists their team
+│   ├── events/                create/list events; [id] for detail, team-members, photos, gallery
+│   ├── photos/[id]/select     admin toggles a photo's gallery selection
+│   └── gallery/[slug]         public metadata + PIN verification, no auth
+├── (auth)/, admin/, team/, gallery/  — the frontend pages
+components/, lib/            — shared UI + the API client (lib/api.js), auth
+                                context, and DB/storage helpers
+models/                       — Mongoose schemas: User, Event, Photo
+scripts/seed.js               — standalone demo-data script (see above)
 ```
 
-Route guards live in `admin/layout.jsx` and `team/layout.jsx`: each calls
-`useAuth()` and redirects to `/login` (unauthenticated) or the other panel
-(wrong role), per `FRONTEND_STRUCTURE.md`.
+Auth is a JWT in an httpOnly cookie set by `/api/auth/login`; every
+protected route reads it via `getAuthUser()` in `lib/authHelper.js`.
+Role and event-ownership/assignment checks happen server-side on every
+event-scoped route (not just in the UI) — see "Security" below.
 
-## Design
+## Photo storage
 
-Two registers, tied to who's using the screen: a dark, functional "ink"
-theme for the admin/team tools (dense, contact-sheet-inspired — frame
-numbers on thumbnails, hairline borders instead of card shadows), and a
-warm "paper" theme for the moments a customer sees — login/register and
-the gallery reveal. Tokens are in `app/globals.css`.
+Photos are saved to local disk (`public/uploads/<eventId>/...`) with only
+the resulting URL stored in MongoDB — Photo documents never hold image
+bytes. That satisfies the spirit of the PDF's storage requirement, but
+**not the letter of it for a real deployment**: the PDF asks for actual
+object storage (S3/Azure Blob/GCS/equivalent), and most hosts (Vercel
+included) run serverless functions with an ephemeral filesystem, so files
+written here won't survive between requests once deployed there.
 
-## Known limitations (by design, matches the docs)
+This is intentionally isolated to one file, `lib/storage.js` — it's the
+only place that writes a photo anywhere. Swapping in real object storage
+(Cloudinary has the fastest setup — one upload call, no bucket/IAM
+config) before you deploy is a change to that one function; nothing else
+in the app needs to know where bytes end up. A worked Cloudinary example
+is commented at the top of that file.
 
-- **Gallery session**: per `CUSTOMER_GALLERY.md`, PIN verification returns
-  the photo list directly with no follow-up session token. Refreshing the
-  gallery page re-prompts for the PIN.
-- **Team assignment is add-only**: `API_SPEC.md` only documents
-  `POST /events/:id/team-members` to assign someone — there's no unassign
-  route, so the UI doesn't offer one.
-- **Upload progress is per-batch, not per-file**: the backend accepts
-  multiple files in a single multipart request, so there's one progress
-  bar for the whole upload rather than one per file.
-- **Photos render as plain `<img>`, not `next/image`**: the Cloudinary
-  (or other) domain isn't known ahead of time, so using `next/image` would
-  require config that breaks until someone edits `next.config.mjs`. Plain
-  `<img>` needs zero configuration regardless of storage provider.
+## Security
+
+- Passwords are hashed with bcrypt; never stored or returned in plaintext.
+- The gallery PIN is bcrypt-hashed at rest (`galleryPinHash`) and only
+  ever exists in plaintext in the single publish response — not stored,
+  not returned again by the status endpoint, freshly regenerated on every
+  publish (so a republish after unpublishing issues a new PIN).
+- Every event-scoped route checks that the requesting admin owns the
+  event, or the requesting team member is assigned to it — an admin can't
+  see another admin's events/photos, and a team member can't upload to or
+  view an event they're not on.
+- Assigning a team member to an event verifies that person was actually
+  created by the requesting admin (can't assign an arbitrary user ID).
+- Publishing requires at least one selected photo (enforced server-side,
+  not just via the disabled button in the UI).
+
+## Known limitations
+
+- **Local disk storage** — see above; fine for `npm run dev`/`npm start`
+  on your own machine, not for serverless deployment as-is.
+- **No unassign-from-event route** — matches the documented API surface;
+  the UI doesn't offer removing an assignment either.
+- **Upload progress is per-batch**, not per-file — one multipart request
+  handles the whole selection.
+- **Gallery PIN has no session/token after verification** — refreshing
+  the gallery page re-prompts for the PIN, matching the documented design.

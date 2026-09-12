@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
-import { getAuthUser } from "@/lib/authHelper";
+import Photo from "@/models/Photo";
+import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 
 function generatePin() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 function generateSlug(name) {
-  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  const suffix = Math.random().toString(36).substring(2, 6);
-  return `${base}-${suffix}`;
+  const base = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `${base || "gallery"}-${suffix}`;
 }
 
 export async function POST(req, { params }) {
@@ -26,29 +31,55 @@ export async function POST(req, { params }) {
     const { id } = await params;
     await connectDB();
     const event = await Event.findById(id);
-
     if (!event) {
+      return NextResponse.json({ success: false, message: "Event not found." }, { status: 404 });
+    }
+    if (!isEventOwner(event, user)) {
       return NextResponse.json(
-        { success: false, message: "Event not found." },
-        { status: 404 }
+        { success: false, message: "You don't have access to this event." },
+        { status: 403 }
       );
     }
 
-    if (!event.gallerySlug) {
-      event.gallerySlug = generateSlug(event.name);
+    const selectedCount = await Photo.countDocuments({ eventId: id, selectedForGallery: true });
+    if (selectedCount === 0) {
+      return NextResponse.json(
+        { success: false, message: "Select at least one photo before publishing." },
+        { status: 400 }
+      );
     }
-    if (!event.galleryPin) {
-      event.galleryPin = generatePin();
-    }
+
+    // Slug stays stable across republishes so a previously shared link
+    // keeps working. The PIN is regenerated every publish and only ever
+    // exists in plaintext for this one response.
+    const plainPin = generatePin();
+    event.galleryPinHash = await bcrypt.hash(plainPin, 10);
     event.galleryPublished = true;
-    await event.save();
+
+    if (!event.gallerySlug) {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        event.gallerySlug = generateSlug(event.name);
+        try {
+          await event.save();
+          break;
+        } catch (err) {
+          if (err.code === 11000 && attempt < 4) continue; // slug collision, retry
+          throw err;
+        }
+      }
+    } else {
+      await event.save();
+    }
+
+    const origin = req.headers.get("origin") || new URL(req.url).origin;
 
     return NextResponse.json({
       success: true,
       data: {
+        status: "published",
         slug: event.gallerySlug,
-        pin: event.galleryPin,
-        published: true,
+        url: `${origin}/gallery/${event.gallerySlug}`,
+        pin: plainPin,
       },
     });
   } catch (error) {

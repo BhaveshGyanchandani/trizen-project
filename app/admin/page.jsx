@@ -11,6 +11,7 @@ import Modal from "@/components/Modal";
 import EmptyState from "@/components/EmptyState";
 import EventCard from "@/components/EventCard";
 import Loader from "@/components/Loader";
+import SummaryStrip from "@/components/SummaryStrip";
 
 export default function AdminDashboard() {
   const [events, setEvents] = useState(null); // null = loading
@@ -42,6 +43,23 @@ export default function AdminDashboard() {
         </div>
         <Button onClick={() => setModalOpen(true)}>Create event</Button>
       </div>
+
+      {events && events.length > 0 && (
+        <SummaryStrip
+          stats={[
+            { label: "Events", value: events.length },
+            {
+              label: "Photos",
+              value: events.reduce((sum, e) => sum + (e.photoCount ?? 0), 0),
+            },
+            {
+              label: "Published",
+              value: events.filter((e) => (e.gallery?.status ?? e.galleryStatus) === "published")
+                .length,
+            },
+          ]}
+        />
+      )}
 
       <div className="mt-8">
         {events === null && (
