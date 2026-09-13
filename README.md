@@ -25,16 +25,17 @@ so local MongoDB and Cloudinary configuration can remain separate.
 
 After `npm run seed` (safe to re-run — everything is upserted):
 
-| Role        | Email                | Password           |
+| Role        | Account              | Password           |
 |-------------|-----------------------|---------------------|
-| Admin       | admin@trizen.demo     | Trizen@Admin123     |
-| Team member | team@trizen.demo      | Trizen@Team123      |
+| Admin       | Priya Shah — `admin@trizen.demo` | `Trizen@Admin123` |
+| Team member | Rohit Mehta — `team@trizen.demo` | `Trizen@Team123` |
 
 The seed also creates one event ("Arjun & Priya Wedding" — the PDF's own
 example) with 3 generated sample photos already uploaded and selected, and
 publishes its gallery at:
 
-- **Link**: `http://localhost:5000/gallery/abc123`
+- **Local link**: `http://localhost:5000/gallery/abc123`
+- **Deployed link**: `https://trizen-project-beta.vercel.app/gallery/abc123`
 - **PIN**: `482917`
 
 (Both values are the exact example ones from section 5 of the challenge
@@ -62,6 +63,25 @@ Auth is a JWT in an httpOnly cookie set by `/api/auth/login`; every
 protected route reads it via `getAuthUser()` in `lib/authHelper.js`.
 Role and event-ownership/assignment checks happen server-side on every
 event-scoped route (not just in the UI) — see "Security" below.
+
+### Request and storage flow
+
+```text
+Browser -> Next.js UI/API -> MongoDB (users, events, photo metadata)
+                           -> Cloudinary (authenticated image bytes)
+
+Admin/team/gallery PIN checks -> /api/photos/:id/file -> signed Cloudinary asset
+```
+
+### Database design
+
+| Collection | Purpose | Key relationships |
+|---|---|---|
+| `users` | Admin and team-member accounts | Team members record their creating admin. |
+| `events` | Event owner, assigned team, gallery status/link/PIN hash, optional cover metadata | Owned by one admin; contains team references. |
+| `photos` | Filename, file size, Cloudinary asset identifiers, selection state, uploader, and event reference | One photo belongs to one event and uploader. Image bytes stay in Cloudinary. |
+| `customerphotofeedbacks` | One customer-session rating/comment per photo | Unique `photoId + customerSessionId`. |
+| `photochangerequests` | Customer removal/change requests | Belongs to an event and photo. |
 
 ## Design system
 
@@ -106,6 +126,29 @@ read only as a temporary fallback until the explicit purge command succeeds.
   not just via the disabled button in the UI).
 - Cloudinary credentials remain server-only; authenticated Cloudinary assets
   require a signed delivery URL and are fetched only after app authorization.
+
+## Testing
+
+```bash
+npm test
+```
+
+The built-in Node test suite covers event ownership/assignment authorization,
+team-member photo visibility, PIN format validation, and the gallery-publish
+policy. Route handlers apply these same policies before database or storage
+operations.
+
+## Deployment (Vercel)
+
+1. Import the Git repository into Vercel and deploy it as a Next.js project.
+2. Add `MONGODB_URL`, `JWT_SECRET`, `CLOUDINARY_CLOUD_NAME`,
+   `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` to Vercel Production,
+   Preview, and Development environments. Alternatively use `CLOUDINARY_URL`.
+3. Redeploy after changing environment variables.
+4. Run `npm run seed` only against the intended demo database, then confirm
+   the admin, team, and gallery login flows using the credentials above.
+5. For legacy deployments, run the Cloudinary migration before removing
+   GridFS data; use the explicit purge command only after visual verification.
 
 ## Known limitations
 

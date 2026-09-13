@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import Photo from "@/models/Photo";
 import { createGalleryAccessToken, galleryCookieName, getGalleryAccess } from "@/lib/authHelper";
+import { isValidGalleryPin } from "@/lib/galleryPolicy";
 import { randomUUID } from "crypto";
 
 export async function POST(req, { params }) {
@@ -11,7 +12,7 @@ export async function POST(req, { params }) {
     const { slug } = await params;
     const { pin } = await req.json();
 
-    if (!pin || !/^\d{6}$/.test(String(pin).trim())) {
+    if (!isValidGalleryPin(pin)) {
       return NextResponse.json({ success: false, message: "Enter the 6-digit PIN." }, { status: 400 });
     }
 

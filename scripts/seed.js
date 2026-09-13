@@ -95,7 +95,7 @@ const PORT = process.env.PORT || 5000;
 
 const DEMO = {
   admin: { name: "Priya Shah", email: "admin@trizen.demo", password: "Trizen@Admin123" },
-  team: { name: "Rohan Mehta", email: "team@trizen.demo", password: "Trizen@Team123" },
+  team: { name: "Rohit Mehta", email: "team@trizen.demo", password: "Trizen@Team123" },
   eventName: "Arjun & Priya Wedding", // same example event the challenge PDF itself uses
   slug: "abc123", // same example slug the PDF's section 5 uses
   pin: "482917", // same example PIN the PDF's section 5 uses

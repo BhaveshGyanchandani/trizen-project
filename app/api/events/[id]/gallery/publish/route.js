@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import Photo from "@/models/Photo";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
+import { canPublishGallery } from "@/lib/galleryPolicy";
 
 function generatePin() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -46,7 +47,7 @@ export async function POST(req, { params }) {
       selectedForGallery: true,
       excludedFromGallery: { $ne: true },
     });
-    if (selectedCount === 0) {
+    if (!canPublishGallery({ event, user, selectedCount })) {
       return NextResponse.json(
         { success: false, message: "Select at least one photo before publishing." },
         { status: 400 }

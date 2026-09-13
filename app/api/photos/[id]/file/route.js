@@ -3,7 +3,8 @@ import { connectDB } from "@/lib/mongodb";
 import { openStoredImage } from "@/lib/storage";
 import Event from "@/models/Event";
 import Photo from "@/models/Photo";
-import { getAuthUser, canAccessEventPhotos, getGalleryAccess } from "@/lib/authHelper";
+import { getAuthUser, getGalleryAccess } from "@/lib/authHelper";
+import { canReadPhoto } from "@/lib/accessControl";
 
 // Serves an authorized photo from Cloudinary. The signed Cloudinary URL is
 // fetched server-side so it never appears in browser markup; this preserves
@@ -43,8 +44,7 @@ export async function GET(req, { params }) {
     const publiclyVisible = Boolean(galleryAccess);
     if (!publiclyVisible) {
       const user = await getAuthUser();
-      const isOwnTeamUpload = user?.role !== "team_member" || String(photo.uploadedBy) === String(user._id);
-      if (!user || !canAccessEventPhotos(event, user) || !isOwnTeamUpload) {
+      if (!canReadPhoto({ event, photo, user, hasGalleryAccess: publiclyVisible })) {
         return NextResponse.json(
           { success: false, message: "Verify the gallery PIN before viewing this photo." },
           { status: 403 }
