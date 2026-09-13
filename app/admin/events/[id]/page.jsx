@@ -729,7 +729,12 @@ function CopyRow({ label, value, mono }) {
     <div>
       <p className="mb-1 text-xs text-muted-foreground">{label}</p>
       <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-3 py-2">
-        <span className={`truncate text-sm ${mono ? "tracking-[0.3em]" : ""}`}>{value}</span>
+        <span
+          className={`min-w-0 flex-1 truncate text-sm ${mono ? "tracking-[0.3em]" : ""}`}
+          title={value}
+        >
+          {value}
+        </span>
         <button
           className="ml-3 flex shrink-0 items-center gap-1 text-xs text-primary hover:underline"
           onClick={() => navigator.clipboard.writeText(value || "").then(() => toast.show(`${label} copied.`))}

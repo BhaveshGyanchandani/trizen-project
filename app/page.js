@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Check } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import Button from "@/components/Button";
@@ -61,9 +62,11 @@ function SiteHeader() {
 function Hero() {
   const { user } = useAuth();
 
-  const frames = [
-    { tone: "shot" }, { tone: "shot" }, { tone: "picked" }, { tone: "shot" },
-    { tone: "picked" }, { tone: "shot" }, { tone: "shot" }, { tone: "picked" },
+  const galleryImages = [
+    { src: "/landing_images/Shoot-1.webp", alt: "Event photography highlight" },
+    { src: "/landing_images/Shoot-2.jpg", alt: "Event photography highlight" },
+    { src: "/landing_images/Shoot-3.jpg", alt: "Event photography highlight" },
+    { src: "/landing_images/Shoot-4.jpg", alt: "Event photography highlight" },
   ];
 
   return (
@@ -97,18 +100,24 @@ function Hero() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 sm:gap-3" aria-hidden="true">
-          {frames.map((f, i) => (
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          {galleryImages.map((image, i) => (
             <div
-              key={i}
-              className={`relative aspect-[4/5] overflow-hidden rounded-lg border ${
-                f.tone === "picked" ? "border-primary" : "border-border"
-              } bg-muted`}
+              key={image.src}
+              className="relative aspect-[4/5] overflow-hidden rounded-lg border border-border bg-muted"
             >
+              <Image
+                src={image.src}
+                alt={image.alt}
+                fill
+                priority={i === 0}
+                sizes="(max-width: 640px) 42vw, (max-width: 1024px) 36vw, 220px"
+                className="object-cover"
+              />
               <span className="absolute left-1.5 top-1.5 rounded bg-foreground/60 px-1 py-0.5 text-[10px] text-background">
                 {String(i + 1).padStart(3, "0")}
               </span>
-              {f.tone === "picked" && (
+              {i === 2 && (
                 <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Check className="size-2.5" />
                 </span>
