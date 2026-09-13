@@ -15,7 +15,7 @@ export async function GET() {
     }
 
     await connectDB();
-    const members = await User.find({ createdBy: user._id, role: "team_member" }).select(
+    const members = await User.find({ createdBy: user._id }).select(
       "-password"
     );
 
@@ -47,11 +47,18 @@ export async function POST(req) {
     }
 
     await connectDB();
-    const { name, email, password } = await req.json();
+    const { name, email, password, role = "team_member" } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
         { success: false, message: "Name, email, and password are required." },
+        { status: 400 }
+      );
+    }
+
+    if (!["admin", "team_member"].includes(role)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid role specified." },
         { status: 400 }
       );
     }
@@ -69,7 +76,7 @@ export async function POST(req) {
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
-      role: "team_member",
+      role,
       createdBy: user._id,
     });
 
@@ -84,7 +91,7 @@ export async function POST(req) {
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to add team member." },
+      { success: false, message: error.message || "Failed to add user." },
       { status: 500 }
     );
   }

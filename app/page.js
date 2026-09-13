@@ -32,6 +32,11 @@ function SiteHeader() {
               <Button as={Link} href={user.role === "admin" ? "/admin" : "/team"} className="text-xs sm:text-sm">
                 Dashboard ({user.role === "admin" ? "Admin" : "Team"})
               </Button>
+              {user.role === "admin" && (
+                <Button as={Link} href="/register" variant="secondary-paper" className="text-xs sm:text-sm">
+                  + Create Account
+                </Button>
+              )}
               <Button onClick={logout} variant="secondary-paper" className="text-xs sm:text-sm">
                 Log out
               </Button>

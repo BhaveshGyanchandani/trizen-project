@@ -39,25 +39,25 @@ export default function TeamPage() {
 
   return (
     <div>
-      <Topbar eyebrow="STUDIO CONSOLE" title="Team">
-        <Button onClick={() => setModalOpen(true)}>+ Add team member</Button>
+      <Topbar eyebrow="STUDIO CONSOLE" title="Team & Accounts">
+        <Button onClick={() => setModalOpen(true)}>+ Add team member / admin</Button>
       </Topbar>
 
       <div className="px-8 py-7">
         <p className="mb-5 text-sm text-ash">
-          People you&apos;ve added who can upload photos to the events they&apos;re assigned to.
+          People in your studio. Team members can upload photos to assigned events; admins have full management access.
         </p>
 
         {members === null && (
           <div className="flex justify-center py-16">
-            <Loader label="Loading team" />
+            <Loader label="Loading accounts" />
           </div>
         )}
         {members?.length === 0 && (
           <EmptyState
-            title="No team members yet"
-            description="Add someone to upload photos on your behalf, then assign them to an event."
-            action={<Button onClick={() => setModalOpen(true)}>Add team member</Button>}
+            title="No accounts added yet"
+            description="Add a team member or admin to manage events and upload photos."
+            action={<Button onClick={() => setModalOpen(true)}>Add team member / admin</Button>}
           />
         )}
         {members && members.length > 0 && (
@@ -67,6 +67,9 @@ export default function TeamPage() {
                 <tr>
                   <th className="border-b border-line px-3.5 pb-2.5 pt-3.5 text-left font-mono text-[10.5px] tracking-wide text-ash-dim">
                     NAME
+                  </th>
+                  <th className="border-b border-line px-3.5 pb-2.5 pt-3.5 text-left font-mono text-[10.5px] tracking-wide text-ash-dim">
+                    ROLE
                   </th>
                   <th className="border-b border-line px-3.5 pb-2.5 pt-3.5 text-left font-mono text-[10.5px] tracking-wide text-ash-dim">
                     EMAIL
@@ -87,6 +90,17 @@ export default function TeamPage() {
                         </span>
                         {member.name}
                       </div>
+                    </td>
+                    <td className="border-b border-line-soft px-3.5 py-3 text-[13px] last:border-b-0">
+                      <span
+                        className={`inline-block rounded-full px-2.5 py-0.5 font-mono text-[11px] ${
+                          member.role === "admin"
+                            ? "border border-safelight/40 bg-safelight-tint/20 text-safelight"
+                            : "border border-line bg-ink-raised text-ash"
+                        }`}
+                      >
+                        {member.role === "admin" ? "🔑 Admin" : "📷 Team Member"}
+                      </span>
                     </td>
                     <td className="border-b border-line-soft px-3.5 py-3 text-[13px] text-ash last:border-b-0">
                       {member.email}
@@ -111,38 +125,40 @@ export default function TeamPage() {
 }
 
 function AddTeamMemberModal({ open, onClose, onCreated }) {
-  const [created, setCreated] = useState(null); // holds { name, email, password } after success
+  const [created, setCreated] = useState(null); // holds { name, email, password, role } after success
+  const [role, setRole] = useState("team_member");
   const toast = useToast();
   const {
     register,
     handleSubmit,
     reset,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm();
 
   const close = () => {
     reset();
     setCreated(null);
+    setRole("team_member");
     onClose();
   };
 
   const onSubmit = async (values) => {
-    const member = await teamMembersAPI.create(values);
+    const member = await teamMembersAPI.create({ ...values, role });
     onCreated(member);
-    toast.success(`${values.name} added to your team.`);
-    setCreated({ name: values.name, email: values.email, password: values.password });
+    toast.success(`${values.name} created as ${role === "admin" ? "Admin" : "Team member"}.`);
+    setCreated({ name: values.name, email: values.email, password: values.password, role });
   };
 
   return (
-    <Modal open={open} onClose={close} title={created ? "Team member added" : "Add team member"}>
+    <Modal open={open} onClose={close} title={created ? "Account created" : "Add team member or admin"}>
       {created ? (
         <div className="space-y-4">
           <p className="text-sm text-ash">
             Share these sign-in details with {created.name} — this password won&apos;t be shown again.
           </p>
-          <div className="rounded-[var(--radius-proof)] border border-line bg-ink-soft p-4 font-mono text-sm">
+          <div className="rounded-[var(--radius-proof)] border border-line bg-ink-soft p-4 font-mono text-sm space-y-1">
+            <p><strong>Role:</strong> {created.role === "admin" ? "Admin" : "Team Member"}</p>
             <p>{created.email}</p>
             <p className="mt-1 text-safelight">{created.password}</p>
           </div>
@@ -165,6 +181,34 @@ function AddTeamMemberModal({ open, onClose, onCreated }) {
         </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block font-mono text-xs text-ash">Account Role</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setRole("team_member")}
+                className={`rounded-[var(--radius-proof)] border px-3 py-2 text-xs font-mono transition-colors ${
+                  role === "team_member"
+                    ? "border-safelight bg-safelight-tint/20 text-safelight font-semibold"
+                    : "border-line bg-ink-raised text-ash hover:border-ash"
+                }`}
+              >
+                📷 Team Member
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("admin")}
+                className={`rounded-[var(--radius-proof)] border px-3 py-2 text-xs font-mono transition-colors ${
+                  role === "admin"
+                    ? "border-safelight bg-safelight-tint/20 text-safelight font-semibold"
+                    : "border-line bg-ink-raised text-ash hover:border-ash"
+                }`}
+              >
+                🔑 Admin
+              </button>
+            </div>
+          </div>
+
           <Field label="Name" error={errors.name && "Enter a name."}>
             <input
               autoFocus
@@ -202,7 +246,7 @@ function AddTeamMemberModal({ open, onClose, onCreated }) {
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Adding…" : "Add team member"}
+              {isSubmitting ? "Creating…" : `Create ${role === "admin" ? "Admin" : "Team Member"}`}
             </Button>
           </div>
         </form>

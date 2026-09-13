@@ -2,16 +2,59 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
-import { setAuthCookie } from "@/lib/authHelper";
+import Event from "@/models/Event";
+import { setAuthCookie, getAuthUser } from "@/lib/authHelper";
+
+export async function GET() {
+  try {
+    await connectDB();
+    const userCount = await User.countDocuments();
+    const authUser = await getAuthUser();
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        adminExists: userCount > 0,
+        isAdmin: authUser?.role === "admin",
+        user: authUser
+          ? { id: authUser._id, name: authUser.name, email: authUser.email, role: authUser.role }
+          : null,
+      },
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: error.message || "Failed to check registration status." },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(req) {
   try {
     await connectDB();
-    const { name, email, password } = await req.json();
+    const userCount = await User.countDocuments();
+    const authUser = await getAuthUser();
+
+    // Registration wall: If users exist, creating an account requires an logged-in Admin session.
+    if (userCount > 0 && (!authUser || authUser.role !== "admin")) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. You must be logged in as an Admin to create accounts." },
+        { status: 403 }
+      );
+    }
+
+    const { name, email, password, role = "admin", eventIds = [] } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
         { success: false, message: "Name, email, and password are required." },
+        { status: 400 }
+      );
+    }
+
+    if (!["admin", "team_member"].includes(role)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid role specified." },
         { status: 400 }
       );
     }
@@ -29,10 +72,23 @@ export async function POST(req) {
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
-      role: "admin",
+      role,
+      createdBy: role === "team_member" && authUser ? authUser._id : undefined,
     });
 
-    await setAuthCookie(user);
+    // If team member and eventIds provided, assign them to specified events
+    if (role === "team_member" && Array.isArray(eventIds) && eventIds.length > 0 && authUser) {
+      await Event.updateMany(
+        { _id: { $in: eventIds }, createdBy: authUser._id },
+        { $addToSet: { assignedTeam: user._id } }
+      );
+    }
+
+    // If this is initial setup (0 users), log in as the newly created initial admin.
+    // Otherwise, an admin created this account, so keep the admin's session active.
+    if (userCount === 0) {
+      await setAuthCookie(user);
+    }
 
     return NextResponse.json({
       success: true,
