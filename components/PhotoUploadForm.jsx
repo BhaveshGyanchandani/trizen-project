@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { UploadCloud, X } from "lucide-react";
+import { CheckCircle2, RefreshCw, UploadCloud, X } from "lucide-react";
 import { photosAPI } from "@/lib/api";
 import { useToast } from "@/lib/useToast";
 import Button from "./Button";
@@ -15,7 +15,6 @@ function formatBytes(bytes) {
 export default function PhotoUploadForm({ eventId, onUploaded }) {
   const [files, setFiles] = useState([]);
   const [dragOver, setDragOver] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
   const toast = useToast();
@@ -25,28 +24,42 @@ export default function PhotoUploadForm({ eventId, onUploaded }) {
     if (incoming.length !== fileList.length) {
       toast.error("Only image files are accepted — some files were skipped.");
     }
-    setFiles((prev) => [...prev, ...incoming]);
+    setFiles((prev) => [
+      ...prev,
+      ...incoming.map((file) => ({ id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`, file, state: "waiting", progress: 0, error: "" })),
+    ]);
   };
 
   const removeFile = (index) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleUpload = async () => {
-    if (files.length === 0) return;
-    setUploading(true);
-    setProgress(0);
+  const uploadItem = async (item) => {
+    setFiles((prev) => prev.map((entry) => entry.id === item.id ? { ...entry, state: "uploading", progress: 0, error: "" } : entry));
     try {
-      const uploaded = await photosAPI.upload(eventId, files, setProgress);
-      toast.success(`Uploaded ${files.length} photo${files.length > 1 ? "s" : ""}.`);
-      setFiles([]);
-      onUploaded?.(uploaded);
+      const payload = await photosAPI.uploadOne(eventId, item.file, (progress) => {
+        setFiles((prev) => prev.map((entry) => entry.id === item.id ? { ...entry, progress } : entry));
+      });
+      const result = payload?.results?.[0];
+      if (!result?.success) throw new Error(result?.message || "Upload failed before the photo record was created.");
+      setFiles((prev) => prev.map((entry) => entry.id === item.id ? { ...entry, state: "complete", progress: 100, photo: result.photo } : entry));
+      return true;
     } catch (err) {
-      toast.error(err.message || "Upload failed. Try again.");
-    } finally {
-      setUploading(false);
-      setProgress(0);
+      setFiles((prev) => prev.map((entry) => entry.id === item.id ? { ...entry, state: "failed", error: err.message || "Upload failed. Try again." } : entry));
+      return false;
     }
+  };
+
+  const handleUpload = async (onlyItem) => {
+    const queue = onlyItem ? [onlyItem] : files.filter((item) => item.state === "waiting" || item.state === "failed");
+    if (queue.length === 0) return;
+    setUploading(true);
+    const outcomes = await Promise.all(queue.map(uploadItem));
+    const succeeded = outcomes.filter(Boolean).length;
+    if (succeeded) onUploaded?.();
+    if (succeeded === queue.length) toast.success(`${succeeded} photo${succeeded === 1 ? "" : "s"} fully uploaded.`);
+    else toast.error(`${succeeded} uploaded, ${queue.length - succeeded} failed. Retry only the failed photos.`);
+    setUploading(false);
   };
 
   return (
@@ -91,36 +104,51 @@ export default function PhotoUploadForm({ eventId, onUploaded }) {
         <div className="mt-4">
           <p className="mb-2 text-sm text-muted-foreground">{files.length} selected</p>
           <ul className="max-h-56 space-y-1 overflow-y-auto pr-1">
-            {files.map((file, i) => (
+            {files.map((item, i) => (
               <li
-                key={`${file.name}-${i}`}
-                className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm"
+                key={item.id}
+                className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm"
               >
-                <span className="truncate">{file.name}</span>
-                <span className="ml-3 flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-                  {formatBytes(file.size)}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate">{item.file.name}</p>
+                    <p className={`mt-0.5 text-xs ${item.state === "failed" ? "text-destructive" : "text-muted-foreground"}`}>
+                      {item.state === "waiting" && "Waiting to upload"}
+                      {item.state === "uploading" && `Uploading… ${item.progress}%`}
+                      {item.state === "complete" && "Storage uploaded ✓ Database record created ✓"}
+                      {item.state === "failed" && item.error}
+                    </p>
+                  </div>
+                  <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                  {formatBytes(item.file.size)}
+                  {item.state === "complete" && <CheckCircle2 className="size-4 text-success" aria-label="Upload complete" />}
+                  {item.state === "failed" && (
+                    <button type="button" onClick={() => handleUpload(item)} disabled={uploading} className="inline-flex items-center gap-1 text-primary hover:underline disabled:opacity-40" aria-label={`Retry ${item.file.name}`}>
+                      <RefreshCw className="size-3.5" /> Retry
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeFile(i)}
-                    disabled={uploading}
+                    disabled={uploading || item.state === "complete"}
                     className="text-muted-foreground transition-colors hover:text-destructive disabled:opacity-40"
-                    aria-label={`Remove ${file.name}`}
+                    aria-label={`Remove ${item.file.name}`}
                   >
                     <X className="size-3.5" />
                   </button>
-                </span>
+                  </span>
+                </div>
+                {item.state === "uploading" && (
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-full bg-primary transition-[width]" style={{ width: `${item.progress}%` }} />
+                  </div>
+                )}
               </li>
             ))}
           </ul>
 
-          {uploading && (
-            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} />
-            </div>
-          )}
-
-          <Button type="button" className="mt-4" onClick={handleUpload} disabled={uploading}>
-            {uploading ? `Uploading ${progress}%` : `Upload ${files.length} photo${files.length > 1 ? "s" : ""}`}
+          <Button type="button" className="mt-4" onClick={() => handleUpload()} disabled={uploading || !files.some((item) => item.state === "waiting" || item.state === "failed")}>
+            {uploading ? "Uploading…" : `Upload pending photos`}
           </Button>
         </div>
       )}

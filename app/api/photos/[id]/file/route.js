@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB, getPhotosBucket } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import Photo from "@/models/Photo";
-import { getAuthUser, canAccessEventPhotos } from "@/lib/authHelper";
+import { getAuthUser, canAccessEventPhotos, getGalleryAccess } from "@/lib/authHelper";
 
 // Serves a photo's bytes out of the "photos" GridFS bucket. GridFS files
 // aren't reachable by a static URL the way public/uploads was, so every
@@ -43,12 +43,15 @@ export async function GET(req, { params }) {
       return NextResponse.json({ success: false, message: "Photo not found." }, { status: 404 });
     }
 
-    const publiclyVisible = event.galleryPublished && (photo.selectedForGallery || photo.publishedForGallery);
+    const isPublishedPhoto = event.galleryPublished && photo.selectedForGallery && !photo.excludedFromGallery;
+    const galleryAccess = isPublishedPhoto ? await getGalleryAccess(event) : null;
+    const publiclyVisible = Boolean(galleryAccess);
     if (!publiclyVisible) {
       const user = await getAuthUser();
-      if (!user || !canAccessEventPhotos(event, user)) {
+      const isOwnTeamUpload = user?.role !== "team_member" || String(photo.uploadedBy) === String(user._id);
+      if (!user || !canAccessEventPhotos(event, user) || !isOwnTeamUpload) {
         return NextResponse.json(
-          { success: false, message: "You don't have access to this photo." },
+          { success: false, message: "Verify the gallery PIN before viewing this photo." },
           { status: 403 }
         );
       }
@@ -73,9 +76,7 @@ export async function GET(req, { params }) {
         status: 200,
         headers: {
           "Content-Type": photo.contentType || "image/jpeg",
-          "Cache-Control": publiclyVisible
-            ? "public, max-age=31536000, immutable"
-            : "private, no-store",
+          "Cache-Control": "private, no-store",
         },
       });
     }
@@ -101,9 +102,7 @@ export async function GET(req, { params }) {
             status: 200,
             headers: {
               "Content-Type": mimeTypes[ext] || "image/jpeg",
-              "Cache-Control": publiclyVisible
-                ? "public, max-age=31536000, immutable"
-                : "private, no-store",
+              "Cache-Control": "private, no-store",
             },
           });
         }

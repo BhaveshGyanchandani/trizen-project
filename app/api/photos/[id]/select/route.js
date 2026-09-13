@@ -46,6 +46,13 @@ export async function PATCH(req, { params }) {
       );
     }
 
+    if (photo.excludedFromGallery && selected) {
+      return NextResponse.json(
+        { success: false, message: "This photo was removed following an approved customer request." },
+        { status: 409 }
+      );
+    }
+
     // Atomic update instead of findById + mutate + save(). Two rapid
     // toggles on the same photo (a fast double-click, a slow network
     // making someone click twice) used to race two `.save()` calls against
@@ -57,7 +64,7 @@ export async function PATCH(req, { params }) {
     // between our read above and this write still can't be silently
     // unselected.
     const updated = await Photo.findOneAndUpdate(
-      { _id: id, publishedForGallery: { $ne: true } },
+      { _id: id, publishedForGallery: { $ne: true }, excludedFromGallery: { $ne: true } },
       { $set: { selectedForGallery: Boolean(selected) } },
       { new: true }
     );
@@ -66,7 +73,7 @@ export async function PATCH(req, { params }) {
       return NextResponse.json(
         {
           success: false,
-          message: "This photo is already live in the published gallery. Unpublish the gallery first to change it.",
+          message: "This photo can't be selected because it is live or was removed following an approved customer request.",
         },
         { status: 409 }
       );

@@ -17,7 +17,11 @@ export async function GET(req, { params }) {
       );
     }
 
-    const photoCount = await Photo.countDocuments({ eventId: event._id, selectedForGallery: true });
+    const photoCount = await Photo.countDocuments({
+      eventId: event._id,
+      selectedForGallery: true,
+      excludedFromGallery: { $ne: true },
+    });
 
     return NextResponse.json({
       success: true,

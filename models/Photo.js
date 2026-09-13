@@ -9,6 +9,9 @@ const PhotoSchema = new mongoose.Schema(
     contentType: { type: String },
     fileSize: { type: Number },
     selectedForGallery: { type: Boolean, default: false },
+    // An approved customer removal request hides a photo from the public
+    // gallery without deleting the original event asset from GridFS.
+    excludedFromGallery: { type: Boolean, default: false, index: true },
     // Set true the moment a selected photo goes live in a publish. Once
     // live, the customer may already have seen/downloaded it, so the admin
     // UI treats it as locked ("already published") rather than a photo

@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import Photo from "@/models/Photo";
+import { createGalleryAccessToken, galleryCookieName, getGalleryAccess } from "@/lib/authHelper";
+import { randomUUID } from "crypto";
 
 export async function POST(req, { params }) {
   try {
@@ -31,11 +33,11 @@ export async function POST(req, { params }) {
       );
     }
 
-    const photos = await Photo.find({ eventId: event._id, selectedForGallery: true }).sort({
+    const photos = await Photo.find({ eventId: event._id, selectedForGallery: true, excludedFromGallery: { $ne: true } }).sort({
       createdAt: -1,
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: {
         eventName: event.name,
@@ -46,6 +48,20 @@ export async function POST(req, { params }) {
         })),
       },
     });
+    // Keep the same anonymous customer identity when this browser verifies
+    // the PIN again (for example after refreshing the gallery). Feedback is
+    // uniquely keyed by photo + customerSessionId, so changing this value on
+    // every verification would create another rating for the same photo.
+    const existingAccess = await getGalleryAccess(event);
+    const customerSessionId = existingAccess?.sessionId || randomUUID();
+    response.cookies.set(galleryCookieName(event._id), createGalleryAccessToken(event, customerSessionId), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 12 * 60 * 60,
+      path: "/",
+    });
+    return response;
   } catch (error) {
     return NextResponse.json(
       { success: false, message: error.message || "PIN verification failed." },

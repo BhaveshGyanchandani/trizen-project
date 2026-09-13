@@ -63,6 +63,11 @@ export default function PhotoGrid({
   locked = false,
   startIndex = 0,
   pendingIds,
+  showDetails = false,
+  actionLabel,
+  onAction,
+  actions,
+  feedbackByPhoto,
 }) {
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
@@ -71,14 +76,14 @@ export default function PhotoGrid({
         const selected = locked ? true : selectedIds?.has(id);
         const pending = pendingIds?.has(id);
         const disabled = locked || pending;
+        const feedback = feedbackByPhoto?.[id] || [];
 
         return (
-          <figure
+          <div
             key={id}
-            className={`group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted ${
-              locked ? "opacity-90" : ""
-            } ${pending ? "opacity-60" : ""}`}
+            className={`${locked ? "opacity-90" : ""} ${pending ? "opacity-60" : ""}`}
           >
+          <figure className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
             <button
               type="button"
               onClick={() => (disabled ? undefined : selectable ? onToggle?.(id) : onPhotoClick?.(index))}
@@ -124,8 +129,47 @@ export default function PhotoGrid({
               <span className="pointer-events-none absolute inset-0 rounded-lg border-2 border-primary" />
             )}
 
+            {(actions || (actionLabel ? [{ label: actionLabel, onClick: onAction }] : [])).length > 0 && !locked && (
+              <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
+                {(actions || [{ label: actionLabel, onClick: onAction }]).map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      action.onClick?.(photo);
+                    }}
+                    className="rounded-md bg-background/95 px-2 py-1 text-[11px] font-medium text-foreground shadow-sm hover:bg-background"
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {locked && <span className="pointer-events-none absolute inset-0 rounded-lg border-2 border-success/70" />}
           </figure>
+          {showDetails && (
+            <figcaption className="px-1 pb-1 pt-2 text-xs">
+              <p className="truncate font-medium" title={photo.filename}>{photo.filename || "Untitled photo"}</p>
+              {photo.uploadedBy?.name && <p className="mt-0.5 truncate text-muted-foreground">Uploaded by {photo.uploadedBy.name}</p>}
+              <div className="mt-1 flex items-center justify-between text-muted-foreground">
+                <span>{photo.createdAt ? new Date(photo.createdAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Upload time unavailable"}</span>
+                <span className={selected ? "text-success" : ""}>{selected ? "Selected ✓" : "Unselected"}</span>
+              </div>
+              {feedback.length > 0 && (
+                <div className="mt-2 space-y-1 border-t border-border pt-2 text-muted-foreground">
+                  {feedback.map((entry) => (
+                    <p key={entry.id} className="break-words">
+                      <span className="font-medium text-foreground">{"★".repeat(entry.rating)}{"☆".repeat(5 - entry.rating)}</span>
+                      {entry.comment ? ` — ${entry.comment}` : " — No comment"}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </figcaption>
+          )}
+          </div>
         );
       })}
     </div>

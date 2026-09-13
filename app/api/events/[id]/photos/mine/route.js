@@ -34,6 +34,7 @@ export async function GET(req, { params }) {
         storageUrl: `/api/photos/${p._id}/file`,
         fileSize: p.fileSize,
         selectedForGallery: p.selectedForGallery,
+        excludedFromGallery: p.excludedFromGallery,
         eventId: p.eventId,
         createdAt: p.createdAt,
       })),

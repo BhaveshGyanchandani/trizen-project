@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { eventsAPI, photosAPI } from "@/lib/api";
+import { use, useEffect, useMemo, useState } from "react";
+import { eventsAPI, photosAPI, photoFeedbackAPI } from "@/lib/api";
 import { useToast } from "@/lib/useToast";
 import PhotoGrid, { PhotoGridSkeleton } from "@/components/PhotoGrid";
 import PhotoUploadForm from "@/components/PhotoUploadForm";
@@ -14,12 +14,17 @@ export default function TeamEventDetail({ params }) {
 
   const [event, setEvent] = useState(null);
   const [photos, setPhotos] = useState(null);
+  const [photoFeedback, setPhotoFeedback] = useState([]);
   const [forbidden, setForbidden] = useState(false);
 
   const loadPhotos = async () => {
     try {
-      const data = await photosAPI.listAllForEvent(id);
+      const [data, feedbackData] = await Promise.all([
+        photosAPI.listAllForEvent(id),
+        photoFeedbackAPI.listForEvent(id),
+      ]);
       setPhotos(Array.isArray(data) ? data : data?.photos || []);
+      setPhotoFeedback(feedbackData?.feedback || []);
     } catch (err) {
       if (err.status === 403) setForbidden(true);
     }
@@ -37,6 +42,12 @@ export default function TeamEventDetail({ params }) {
     loadPhotos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const feedbackByPhoto = useMemo(() => photoFeedback.reduce((grouped, entry) => {
+    const photoId = String(entry.photoId);
+    grouped[photoId] = [...(grouped[photoId] || []), entry];
+    return grouped;
+  }, {}), [photoFeedback]);
 
   if (forbidden) {
     return (
@@ -91,7 +102,7 @@ export default function TeamEventDetail({ params }) {
                 description="Photos uploaded for this event will show up here."
               />
             )}
-            {photos && photos.length > 0 && <PhotoGrid photos={photos} />}
+            {photos && photos.length > 0 && <PhotoGrid photos={photos} showDetails feedbackByPhoto={feedbackByPhoto} />}
           </div>
         </section>
       </div>

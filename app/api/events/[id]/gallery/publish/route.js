@@ -41,7 +41,11 @@ export async function POST(req, { params }) {
       );
     }
 
-    const selectedCount = await Photo.countDocuments({ eventId: id, selectedForGallery: true });
+    const selectedCount = await Photo.countDocuments({
+      eventId: id,
+      selectedForGallery: true,
+      excludedFromGallery: { $ne: true },
+    });
     if (selectedCount === 0) {
       return NextResponse.json(
         { success: false, message: "Select at least one photo before publishing." },
@@ -69,7 +73,7 @@ export async function POST(req, { params }) {
     // "already published" — the admin UI uses this to stop treating it as
     // a pending selection decision on future visits.
     await Photo.updateMany(
-      { eventId: id, selectedForGallery: true },
+      { eventId: id, selectedForGallery: true, excludedFromGallery: { $ne: true } },
       { $set: { publishedForGallery: true } }
     );
 
