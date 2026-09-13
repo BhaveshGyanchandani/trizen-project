@@ -39,9 +39,9 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    // Delete the actual GridFS asset before the database reference. If this
-    // fails, leave the record intact so the admin can retry safely.
-    await deleteUploadedFile(photo.gridfsId);
+    // Delete the remote asset before the database reference. If this fails,
+    // leave the record intact so the admin can retry safely.
+    await deleteUploadedFile(photo);
     await Promise.all([
       CustomerPhotoFeedback.deleteMany({ photoId: photo._id }),
       PhotoChangeRequest.deleteMany({ photoId: photo._id }),

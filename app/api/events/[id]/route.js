@@ -14,7 +14,7 @@ function serializeEvent(event) {
     ),
     galleryStatus: event.galleryPublished ? "published" : "draft",
     gallerySlug: event.gallerySlug,
-    coverPhotoUrl: event.coverPhotoGridfsId ? `/api/events/${event._id}/cover` : null,
+    coverPhotoUrl: event.coverPhotoCloudinaryPublicId || event.coverPhotoGridfsId ? `/api/events/${event._id}/cover` : null,
     createdAt: event.createdAt,
   };
 }
@@ -104,17 +104,35 @@ export async function PATCH(req, { params }) {
       event.name = trimmed;
     }
 
+    let previousCover;
+    let uploadedCover;
     if (coverPhotoFile) {
-      const previousId = event.coverPhotoGridfsId;
-      const { gridfsId, contentType: fileContentType } = await saveUploadedFile(coverPhotoFile, id);
-      event.coverPhotoGridfsId = gridfsId;
-      event.coverPhotoContentType = fileContentType;
-      if (previousId) {
-        await deleteUploadedFile(previousId);
-      }
+      previousCover = {
+        cloudinaryPublicId: event.coverPhotoCloudinaryPublicId,
+        gridfsId: event.coverPhotoGridfsId,
+      };
+      uploadedCover = await saveUploadedFile(coverPhotoFile, {
+        folder: `trizen/events/${id}/covers`,
+        publicId: `cover-${Date.now()}`,
+      });
+      event.coverPhotoStorageProvider = uploadedCover.storageProvider;
+      event.coverPhotoCloudinaryPublicId = uploadedCover.cloudinaryPublicId;
+      event.coverPhotoCloudinaryAssetId = uploadedCover.cloudinaryAssetId;
+      event.coverPhotoCloudinaryVersion = uploadedCover.cloudinaryVersion;
+      event.coverPhotoCloudinaryFormat = uploadedCover.cloudinaryFormat;
+      event.coverPhotoContentType = uploadedCover.contentType;
+      event.coverPhotoGridfsId = undefined;
     }
 
-    await event.save();
+    try {
+      await event.save();
+    } catch (error) {
+      if (uploadedCover) await deleteUploadedFile(uploadedCover).catch(() => {});
+      throw error;
+    }
+    if (previousCover?.cloudinaryPublicId || previousCover?.gridfsId) {
+      await deleteUploadedFile(previousCover);
+    }
     await event.populate("assignedTeam", "name email");
 
     return NextResponse.json({ success: true, data: serializeEvent(event) });

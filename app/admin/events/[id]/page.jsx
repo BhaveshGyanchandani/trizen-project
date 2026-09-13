@@ -2,6 +2,9 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import { Copy, ShieldCheck } from "lucide-react";
+import Lightbox from "yet-another-react-lightbox";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import "yet-another-react-lightbox/styles.css";
 import { eventsAPI, teamMembersAPI, photosAPI, galleryAdminAPI, photoRequestsAPI, photoFeedbackAPI } from "@/lib/api";
 import { idOf } from "@/lib/idOf";
 import { useToast } from "@/lib/useToast";
@@ -23,6 +26,10 @@ function normalizeGallery(data) {
     status: g.status || "draft",
     slug: g.slug,
   };
+}
+
+function photoSrc(photo) {
+  return `/api/photos/${idOf(photo)}/file`;
 }
 
 export default function AdminEventDetail({ params }) {
@@ -51,6 +58,7 @@ export default function AdminEventDetail({ params }) {
   const [updatingAssignmentIds, setUpdatingAssignmentIds] = useState(() => new Set());
   const [editOpen, setEditOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   const load = async () => {
     setPhotoLoading(true);
@@ -143,7 +151,10 @@ export default function AdminEventDetail({ params }) {
   // "Ready to publish" count = already-live photos (staying live) + newly
   // selected ones — this is what will actually be in the gallery after
   // the next publish.
-  const totalReadyCount = photoSummary?.selected ?? (publishedPhotos.length + selectedIds.size);
+  // This must be derived from the current optimistic photo state, not the
+  // last server summary; otherwise Publish can remain disabled after a
+  // checkbox selection until the next full reload.
+  const totalReadyCount = publishedPhotos.length + selectedIds.size;
 
   const handleAssign = async (userId) => {
     if (updatingAssignmentIds.has(userId)) return;
@@ -464,6 +475,7 @@ export default function AdminEventDetail({ params }) {
                   locked
                   showDetails
                   feedbackByPhoto={feedbackByPhoto}
+                  onPhotoClick={(index) => setPhotoPreview({ photos: publishedPhotos, index })}
                   actions={[{ label: "Delete", onClick: setPhotoToDelete, variant: "danger" }]}
                 />
               </div>
@@ -496,6 +508,7 @@ export default function AdminEventDetail({ params }) {
                   selectable
                   selectedIds={selectedIds}
                   onToggle={handleTogglePhoto}
+                  onPhotoClick={(index) => setPhotoPreview({ photos: pendingPhotos, index })}
                   startIndex={publishedPhotos.length}
                   pendingIds={togglingIds}
                   showDetails
@@ -550,6 +563,14 @@ export default function AdminEventDetail({ params }) {
 
       <PublishRevealModal result={publishResult} onClose={() => setPublishResult(null)} />
       <PinRevealModal result={pinResult} onClose={() => setPinResult(null)} />
+      <Lightbox
+        open={!!photoPreview}
+        index={photoPreview?.index || 0}
+        close={() => setPhotoPreview(null)}
+        slides={(photoPreview?.photos || []).map((photo) => ({ src: photoSrc(photo), alt: photo.filename || "Event photo" }))}
+        plugins={[Zoom]}
+        styles={{ container: { backgroundColor: "rgba(23,24,28,0.96)" } }}
+      />
       <Modal
         open={!!photoToDelete}
         onClose={() => !deletingPhotoId && setPhotoToDelete(null)}

@@ -5,6 +5,14 @@ const PhotoSchema = new mongoose.Schema(
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: "Event", required: true, index: true },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     filename: { type: String, required: true },
+    // New uploads live in Cloudinary. gridfsId is retained temporarily so
+    // existing records keep working until scripts/migrate-gridfs-to-cloudinary.js
+    // has moved and verified every legacy asset.
+    storageProvider: { type: String, enum: ["cloudinary", "gridfs"], default: "cloudinary", index: true },
+    cloudinaryPublicId: { type: String, sparse: true, index: true },
+    cloudinaryAssetId: { type: String, sparse: true, unique: true },
+    cloudinaryVersion: { type: Number },
+    cloudinaryFormat: { type: String },
     gridfsId: { type: mongoose.Schema.Types.ObjectId },
     contentType: { type: String },
     fileSize: { type: Number },

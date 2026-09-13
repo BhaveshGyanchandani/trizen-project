@@ -5,10 +5,13 @@ const EventSchema = new mongoose.Schema(
     name: { type: String, required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     assignedTeam: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    // Cover photo shown on the event card/dashboard. Stored the same way
-    // as gallery photos — bytes in GridFS, only a reference here — so an
-    // event doesn't need its own upload/storage path. Admin-editable only;
-    // team members and the public gallery only ever read it.
+    // Cover photos use the same Cloudinary-backed storage metadata as event
+    // photos. The GridFS field remains only for legacy records during migration.
+    coverPhotoStorageProvider: { type: String, enum: ["cloudinary", "gridfs"], default: "cloudinary" },
+    coverPhotoCloudinaryPublicId: { type: String },
+    coverPhotoCloudinaryAssetId: { type: String },
+    coverPhotoCloudinaryVersion: { type: Number },
+    coverPhotoCloudinaryFormat: { type: String },
     coverPhotoGridfsId: { type: mongoose.Schema.Types.ObjectId },
     coverPhotoContentType: { type: String },
     galleryPublished: { type: Boolean, default: false },

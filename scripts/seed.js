@@ -11,12 +11,31 @@
 
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const { v2: cloudinary } = require("cloudinary");
 
 const MONGODB_URL = process.env.MONGODB_URL;
 if (!MONGODB_URL) {
   console.error("MONGODB_URL is not set. Add it to .env.local first, then re-run `npm run seed`.");
   process.exit(1);
 }
+
+const cloudinaryMissing = process.env.CLOUDINARY_URL
+  ? []
+  : ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"]
+      .filter((name) => !process.env[name]);
+if (cloudinaryMissing.length) {
+  console.error(`Missing Cloudinary configuration: ${cloudinaryMissing.join(", ")}.`);
+  process.exit(1);
+}
+
+cloudinary.config(process.env.CLOUDINARY_URL
+  ? { secure: true }
+  : {
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+      secure: true,
+    });
 
 // Schemas are redefined here (not imported from ../models) so this script
 // has zero dependency on the app's ESM module graph or Next.js — it only
@@ -40,6 +59,12 @@ const EventSchema = new mongoose.Schema(
     galleryPublished: { type: Boolean, default: false },
     galleryPinHash: String,
     gallerySlug: { type: String, unique: true, sparse: true },
+    coverPhotoStorageProvider: String,
+    coverPhotoCloudinaryPublicId: String,
+    coverPhotoCloudinaryAssetId: String,
+    coverPhotoCloudinaryVersion: Number,
+    coverPhotoCloudinaryFormat: String,
+    coverPhotoContentType: String,
   },
   { timestamps: true }
 );
@@ -49,6 +74,11 @@ const PhotoSchema = new mongoose.Schema(
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: "Event" },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     filename: String,
+    storageProvider: String,
+    cloudinaryPublicId: String,
+    cloudinaryAssetId: String,
+    cloudinaryVersion: Number,
+    cloudinaryFormat: String,
     gridfsId: mongoose.Schema.Types.ObjectId,
     contentType: String,
     fileSize: Number,
@@ -88,6 +118,22 @@ async function upsertUser({ name, email, password, role, createdBy }) {
   );
 }
 
+async function uploadSample(buffer, eventId, photoId) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: "image",
+        type: "authenticated",
+        folder: `trizen/events/${eventId}`,
+        public_id: String(photoId),
+        overwrite: false,
+      },
+      (error, result) => (error ? reject(error) : resolve(result))
+    );
+    stream.end(buffer);
+  });
+}
+
 async function main() {
   await mongoose.connect(MONGODB_URL);
   console.log("Connected to MongoDB.");
@@ -108,65 +154,40 @@ async function main() {
   }
 
   const existingPhotoCount = await Photo.countDocuments({ eventId: event._id });
-  const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-    bucketName: "photos",
-  });
 
   if (existingPhotoCount === 0) {
-    for (const [index, sample] of SAMPLE_PHOTOS.entries()) {
+    for (const sample of SAMPLE_PHOTOS) {
       const buffer = Buffer.from(sample.base64, "base64");
-      const contentType = "image/jpeg";
-
-      const gridfsId = await new Promise((resolve, reject) => {
-        const uploadStream = bucket.openUploadStream(sample.filename, {
-          contentType,
-          metadata: { eventId: String(event._id) },
-        });
-        uploadStream.on("error", reject);
-        uploadStream.on("finish", () => resolve(uploadStream.id));
-        uploadStream.end(buffer);
-      });
-
-      await Photo.create({
+      const photo = new Photo({
         eventId: event._id,
         uploadedBy: team._id,
         filename: sample.filename,
-        gridfsId,
-        contentType,
-        fileSize: buffer.length,
         selectedForGallery: true,
       });
+      const uploaded = await uploadSample(buffer, event._id, photo._id);
+      photo.set({
+        storageProvider: "cloudinary",
+        cloudinaryPublicId: uploaded.public_id,
+        cloudinaryAssetId: uploaded.asset_id,
+        cloudinaryVersion: uploaded.version,
+        cloudinaryFormat: uploaded.format,
+        contentType: "image/jpeg",
+        fileSize: uploaded.bytes,
+      });
+      await photo.save();
     }
-    console.log(`Seeded ${SAMPLE_PHOTOS.length} sample photos (via GridFS), all selected for the gallery.`);
+    console.log(`Seeded ${SAMPLE_PHOTOS.length} sample photos in Cloudinary, all selected for the gallery.`);
   } else {
-    console.log(`Event already has ${existingPhotoCount} photo(s) — ensuring GridFS storage.`);
-    const existingPhotos = await Photo.find({ eventId: event._id });
-    for (const photo of existingPhotos) {
-      if (!photo.gridfsId) {
-        const sample = SAMPLE_PHOTOS[0];
-        const buffer = Buffer.from(sample.base64, "base64");
-        const contentType = "image/jpeg";
-
-        const gridfsId = await new Promise((resolve, reject) => {
-          const uploadStream = bucket.openUploadStream(photo.filename || "photo.jpg", {
-            contentType,
-            metadata: { eventId: String(event._id) },
-          });
-          uploadStream.on("error", reject);
-          uploadStream.on("finish", () => resolve(uploadStream.id));
-          uploadStream.end(buffer);
-        });
-
-        photo.gridfsId = gridfsId;
-        photo.contentType = contentType;
-        await photo.save();
-      }
-    }
+    console.log(`Event already has ${existingPhotoCount} photo(s). Run npm run migrate:cloudinary for legacy GridFS records.`);
   }
 
-  const firstPhoto = await Photo.findOne({ eventId: event._id, gridfsId: { $exists: true } });
-  if (firstPhoto && !event.coverPhotoGridfsId) {
-    event.coverPhotoGridfsId = firstPhoto.gridfsId;
+  const firstPhoto = await Photo.findOne({ eventId: event._id, cloudinaryPublicId: { $exists: true } });
+  if (firstPhoto && !event.coverPhotoCloudinaryPublicId) {
+    event.coverPhotoStorageProvider = "cloudinary";
+    event.coverPhotoCloudinaryPublicId = firstPhoto.cloudinaryPublicId;
+    event.coverPhotoCloudinaryAssetId = firstPhoto.cloudinaryAssetId;
+    event.coverPhotoCloudinaryVersion = firstPhoto.cloudinaryVersion;
+    event.coverPhotoCloudinaryFormat = firstPhoto.cloudinaryFormat;
     event.coverPhotoContentType = firstPhoto.contentType || "image/jpeg";
     await event.save();
   }

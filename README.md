@@ -14,9 +14,12 @@ npm run seed                        # creates demo accounts + a sample gallery
 npm run dev                         # runs on http://localhost:5000
 ```
 
-`.env.local.example` already has a freshly generated `JWT_SECRET` and the
-right `NEXT_PUBLIC_API_URL` — the only value you need to supply is your own
-`MONGODB_URL` (e.g. an Atlas connection string).
+Set `MONGODB_URL`, `JWT_SECRET`, and the three server-only Cloudinary values
+from `.env.local.example`. Never commit real credentials. For an existing
+GridFS-backed database, run `npm run migrate:cloudinary` first, verify the
+app, then run `npm run migrate:cloudinary -- --purge-gridfs` to remove the
+legacy database file bytes. The migration reads both `.env.local` and `.env`
+so local MongoDB and Cloudinary configuration can remain separate.
 
 ## Demo credentials
 
@@ -75,17 +78,16 @@ typefaces or color registers between them. App-level components like
 
 ## Photo storage
 
-Photos are saved to MongoDB itself via GridFS — not local disk, and not a
-third-party object store. Photo documents only ever hold a reference
-(`gridfsId` + `contentType`), never the bytes themselves; reads go through
-`GET /api/photos/[id]/file`, which streams the bucket's download stream
-back as the response. This works identically in local dev and on
-serverless hosts like Vercel, since both just need a MongoDB connection
-string — no bucket/IAM setup, no ephemeral-filesystem surprises.
+Cloudinary stores all new image bytes as authenticated assets. MongoDB stores
+only photo metadata and Cloudinary identifiers (`cloudinaryPublicId`,
+`cloudinaryAssetId`, version, format, filename, size, event, uploader, and
+gallery state). The existing `GET /api/photos/[id]/file` route still enforces
+admin/team/gallery-PIN access, then proxies a server-generated signed
+Cloudinary URL so the signed URL is never exposed in page markup.
 
-This is intentionally isolated to one file, `lib/storage.js` — it's the
-only place that writes a photo anywhere, so swapping in a different
-backend later (S3, Cloudinary, etc.) only touches that file.
+`scripts/migrate-gridfs-to-cloudinary.js` safely copies legacy GridFS files
+to Cloudinary and updates their existing MongoDB records in place. GridFS is
+read only as a temporary fallback until the explicit purge command succeeds.
 
 ## Security
 
@@ -102,12 +104,12 @@ backend later (S3, Cloudinary, etc.) only touches that file.
   created by the requesting admin (can't assign an arbitrary user ID).
 - Publishing requires at least one selected photo (enforced server-side,
   not just via the disabled button in the UI).
+- Cloudinary credentials remain server-only; authenticated Cloudinary assets
+  require a signed delivery URL and are fetched only after app authorization.
 
 ## Known limitations
 
-- **No unassign-from-event route** — matches the documented API surface;
-  the UI doesn't offer removing an assignment either.
 - **Upload progress is per-batch**, not per-file — one multipart request
   handles the whole selection.
-- **Gallery PIN has no session/token after verification** — refreshing
-  the gallery page re-prompts for the PIN, matching the documented design.
+- **Gallery feedback is browser-session based** — it persists through
+  refreshes of the same browser but is not tied to a customer account.

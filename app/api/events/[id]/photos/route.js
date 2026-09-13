@@ -119,24 +119,20 @@ export async function POST(req, { params }) {
     for (const file of files) {
       let stored;
       try {
-        stored = await saveUploadedFile(file, eventId);
-      } catch (error) {
-        results.push({
-          filename: file.name || "photo",
-          success: false,
-          stage: "storage_failed",
-          message: error.message || "The image could not be stored.",
-        });
-        continue;
-      }
-
-      try {
-        const photo = await Photo.create({
+        // Allocate the MongoDB id first so the Cloudinary public id is stable
+        // and directly traceable back to this photo record.
+        const photo = new Photo({
           eventId,
           uploadedBy: user._id,
-          ...stored,
+          filename: file.name || "photo",
           selectedForGallery: false,
         });
+        stored = await saveUploadedFile(file, {
+          folder: `trizen/events/${eventId}`,
+          publicId: String(photo._id),
+        });
+        photo.set(stored);
+        await photo.save();
         results.push({
           filename: stored.filename,
           success: true,
@@ -144,21 +140,19 @@ export async function POST(req, { params }) {
           photo: serializePhoto(photo),
         });
       } catch (error) {
-        // A photo isn't successful until both writes complete. Make a best
-        // effort to remove the GridFS file so a database failure does not
-        // leave an unreachable storage object behind.
-        let message = error.message || "The photo record could not be created.";
-        try {
-          await deleteUploadedFile(stored.gridfsId);
-        } catch {
-          message += " Storage cleanup also failed; please contact an admin.";
-        }
         results.push({
-          filename: stored.filename,
+          filename: file.name || "photo",
           success: false,
-          stage: "database_failed",
-          message,
+          stage: stored ? "database_failed" : "storage_failed",
+          message: error.message || (stored ? "The photo record could not be created." : "The image could not be stored."),
         });
+        if (stored) {
+          try {
+            await deleteUploadedFile(stored);
+          } catch {
+            results[results.length - 1].message += " Cloudinary cleanup also failed; please contact an admin.";
+          }
+        }
       }
     }
 

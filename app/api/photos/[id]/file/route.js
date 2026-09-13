@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
-import { connectDB, getPhotosBucket } from "@/lib/mongodb";
+import { connectDB } from "@/lib/mongodb";
+import { openStoredImage } from "@/lib/storage";
 import Event from "@/models/Event";
 import Photo from "@/models/Photo";
 import { getAuthUser, canAccessEventPhotos, getGalleryAccess } from "@/lib/authHelper";
 
-// Serves a photo's bytes out of the "photos" GridFS bucket. GridFS files
-// aren't reachable by a static URL the way public/uploads was, so every
-// photo-displaying surface (admin review grid, team member's own uploads,
-// customer gallery) now points its <img> src at this route instead.
-//
-// GridFS is the only storage backend a Photo document can point at —
-// there's no local-disk fallback here. (An older revision of this route
-// redirected to `photo.storageUrl` for photos saved to public/uploads/,
-// but that path is ephemeral on serverless hosts like Vercel and doesn't
-// survive a deploy, so it was removed rather than kept as a fallback.)
+// Serves an authorized photo from Cloudinary. The signed Cloudinary URL is
+// fetched server-side so it never appears in browser markup; this preserves
+// the existing role and PIN access controls. Legacy GridFS records keep
+// working until the migration script has moved them.
 //
 // Three separate audiences load images through here, and only one of them
 // has a session cookie:
@@ -57,27 +52,11 @@ export async function GET(req, { params }) {
       }
     }
 
-    if (photo.gridfsId) {
-      const bucket = await getPhotosBucket();
-      const downloadStream = bucket.openDownloadStream(photo.gridfsId);
-
-      const body = new ReadableStream({
-        start(controller) {
-          downloadStream.on("data", (chunk) => controller.enqueue(chunk));
-          downloadStream.on("end", () => controller.close());
-          downloadStream.on("error", (err) => controller.error(err));
-        },
-        cancel() {
-          downloadStream.destroy();
-        },
-      });
-
-      return new Response(body, {
+    if (photo.cloudinaryPublicId || photo.gridfsId) {
+      const stored = await openStoredImage(photo);
+      return new Response(stored.body, {
         status: 200,
-        headers: {
-          "Content-Type": photo.contentType || "image/jpeg",
-          "Cache-Control": "private, no-store",
-        },
+        headers: { "Content-Type": stored.contentType, "Cache-Control": "private, no-store" },
       });
     }
 

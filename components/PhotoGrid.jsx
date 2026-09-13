@@ -75,7 +75,9 @@ export default function PhotoGrid({
         const id = idOf(photo);
         const selected = locked ? true : selectedIds?.has(id);
         const pending = pendingIds?.has(id);
-        const disabled = locked || pending;
+        const canToggle = selectable && !locked && !pending;
+        const canView = Boolean(onPhotoClick) && !pending;
+        const disabled = !canToggle && !canView;
         const feedback = feedbackByPhoto?.[id] || [];
 
         return (
@@ -86,16 +88,19 @@ export default function PhotoGrid({
           <figure className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
             <button
               type="button"
-              onClick={() => (disabled ? undefined : selectable ? onToggle?.(id) : onPhotoClick?.(index))}
-              className={`absolute inset-0 h-full w-full ${disabled ? "cursor-default" : ""}`}
+              onClick={() => {
+                if (canView) onPhotoClick(index);
+                else if (canToggle) onToggle?.(id);
+              }}
+              className={`absolute inset-0 h-full w-full ${canView ? "cursor-zoom-in" : disabled ? "cursor-default" : ""}`}
               aria-label={
-                locked
-                  ? `${photo.filename} — already published`
-                  : pending
-                    ? `${photo.filename} — updating`
+                pending
+                  ? `${photo.filename} — updating`
+                  : canView
+                    ? `View ${photo.filename} full size`
                     : selectable
-                      ? `Toggle ${photo.filename}`
-                      : `View ${photo.filename}`
+                      ? `Select ${photo.filename}`
+                      : `${photo.filename} — already published`
               }
               aria-busy={pending || undefined}
               disabled={disabled}
@@ -114,15 +119,23 @@ export default function PhotoGrid({
             )}
 
             {selectable && !locked && (
-              <span
-                className={`pointer-events-none absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border ${
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggle?.(id);
+                }}
+                disabled={pending}
+                aria-label={`${selected ? "Unselect" : "Select"} ${photo.filename}`}
+                aria-pressed={selected}
+                className={`absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait ${
                   selected
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-white/70 bg-black/40 text-transparent"
                 }`}
               >
                 <Check className="size-3" />
-              </span>
+              </button>
             )}
 
             {selectable && !locked && selected && (

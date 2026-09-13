@@ -14,7 +14,7 @@ function serializeEvent(event, photoCountByEvent) {
     ),
     galleryStatus: event.galleryPublished ? "published" : "draft",
     gallerySlug: event.gallerySlug,
-    coverPhotoUrl: event.coverPhotoGridfsId ? `/api/events/${event._id}/cover` : null,
+    coverPhotoUrl: event.coverPhotoCloudinaryPublicId || event.coverPhotoGridfsId ? `/api/events/${event._id}/cover` : null,
     photoCount: photoCountByEvent?.get(String(event._id)) ?? 0,
     createdAt: event.createdAt,
   };

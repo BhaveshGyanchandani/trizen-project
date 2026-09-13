@@ -1,6 +1,9 @@
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
+import Lightbox from "yet-another-react-lightbox";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import "yet-another-react-lightbox/styles.css";
 import { eventsAPI, photosAPI, photoFeedbackAPI } from "@/lib/api";
 import { useToast } from "@/lib/useToast";
 import PhotoGrid, { PhotoGridSkeleton } from "@/components/PhotoGrid";
@@ -16,6 +19,7 @@ export default function TeamEventDetail({ params }) {
   const [photos, setPhotos] = useState(null);
   const [photoFeedback, setPhotoFeedback] = useState([]);
   const [forbidden, setForbidden] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   const loadPhotos = async () => {
     try {
@@ -102,10 +106,25 @@ export default function TeamEventDetail({ params }) {
                 description="Photos uploaded for this event will show up here."
               />
             )}
-            {photos && photos.length > 0 && <PhotoGrid photos={photos} showDetails feedbackByPhoto={feedbackByPhoto} />}
+            {photos && photos.length > 0 && (
+              <PhotoGrid
+                photos={photos}
+                showDetails
+                feedbackByPhoto={feedbackByPhoto}
+                onPhotoClick={setLightboxIndex}
+              />
+            )}
           </div>
         </section>
       </div>
+      <Lightbox
+        open={lightboxIndex >= 0}
+        index={lightboxIndex}
+        close={() => setLightboxIndex(-1)}
+        slides={(photos || []).map((photo) => ({ src: `/api/photos/${photo.id || photo._id}/file`, alt: photo.filename || "Event photo" }))}
+        plugins={[Zoom]}
+        styles={{ container: { backgroundColor: "rgba(23,24,28,0.96)" } }}
+      />
     </div>
   );
 }

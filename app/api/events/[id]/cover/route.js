@@ -1,25 +1,24 @@
 import { NextResponse } from "next/server";
-import { connectDB, getPhotosBucket } from "@/lib/mongodb";
+import { connectDB } from "@/lib/mongodb";
+import { openStoredImage } from "@/lib/storage";
 import Event from "@/models/Event";
 import { getAuthUser, isEventOwner, isAssignedToEvent } from "@/lib/authHelper";
 
-// Serves an event's cover photo out of the same "photos" GridFS bucket
-// used for gallery photos — an event's cover is admin-set but visible to
-// anyone who can already see the event itself (the owning admin, or a
-// team member assigned to it). It is never exposed to the public gallery.
+// Serves an event cover from Cloudinary after verifying event access. GridFS
+// remains as a legacy fallback while existing covers are migrated.
 export async function GET(req, { params }) {
   try {
     const { id } = await params;
     await connectDB();
 
     const event = await Event.findById(id);
-    if (!event || (!event.coverPhotoGridfsId && !event.coverPhotoUrl)) {
+    if (!event || (!event.coverPhotoCloudinaryPublicId && !event.coverPhotoGridfsId && !event.coverPhotoUrl)) {
       return NextResponse.json({ success: false, message: "No cover photo set." }, { status: 404 });
     }
 
     const user = await getAuthUser();
     const allowed =
-      !!user && (user.role === "admin" || isAssignedToEvent(event, user));
+      !!user && (user.role === "admin" ? isEventOwner(event, user) : isAssignedToEvent(event, user));
     if (!allowed) {
       return NextResponse.json(
         { success: false, message: "You don't have access to this event." },
@@ -27,24 +26,18 @@ export async function GET(req, { params }) {
       );
     }
 
-    const bucket = await getPhotosBucket();
-    const downloadStream = bucket.openDownloadStream(event.coverPhotoGridfsId);
-
-    const body = new ReadableStream({
-      start(controller) {
-        downloadStream.on("data", (chunk) => controller.enqueue(chunk));
-        downloadStream.on("end", () => controller.close());
-        downloadStream.on("error", (err) => controller.error(err));
-      },
-      cancel() {
-        downloadStream.destroy();
-      },
+    const stored = await openStoredImage({
+      cloudinaryPublicId: event.coverPhotoCloudinaryPublicId,
+      cloudinaryVersion: event.coverPhotoCloudinaryVersion,
+      cloudinaryFormat: event.coverPhotoCloudinaryFormat,
+      gridfsId: event.coverPhotoGridfsId,
+      contentType: event.coverPhotoContentType,
     });
 
-    return new Response(body, {
+    return new Response(stored.body, {
       status: 200,
       headers: {
-        "Content-Type": event.coverPhotoContentType || "application/octet-stream",
+        "Content-Type": stored.contentType,
         "Cache-Control": "private, no-store",
       },
     });
