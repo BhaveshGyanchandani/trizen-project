@@ -23,8 +23,10 @@ function serializePhoto(photo) {
   };
 }
 
-// Admins can filter every photo on an event. Team members only receive their
-// own uploads, even if they try to call this endpoint directly.
+// Admins can filter every photo on an event. Team members receive their own
+// uploads plus photos currently visible in the published gallery, so they can
+// see what has already been delivered without gaining access to other team's
+// unpublished work.
 export async function GET(req, { params }) {
   try {
     const user = await getAuthUser();
@@ -51,7 +53,10 @@ export async function GET(req, { params }) {
     const uploadedBy = searchParams.get("uploadedBy");
 
     if (user.role !== "admin") {
-      query.uploadedBy = user._id;
+      query.$or = [{ uploadedBy: user._id }];
+      if (event.galleryPublished) {
+        query.$or.push({ selectedForGallery: true, excludedFromGallery: { $ne: true } });
+      }
       status = "all";
     } else {
       if (!["all", "selected", "unselected"].includes(status)) {

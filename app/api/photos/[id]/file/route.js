@@ -44,7 +44,7 @@ export async function GET(req, { params }) {
     const publiclyVisible = Boolean(galleryAccess);
     if (!publiclyVisible) {
       const user = await getAuthUser();
-      if (!canReadPhoto({ event, photo, user, hasGalleryAccess: publiclyVisible })) {
+      if (!canReadPhoto({ event, photo, user, hasGalleryAccess: publiclyVisible, isPublished: isPublishedPhoto })) {
         return NextResponse.json(
           { success: false, message: "Verify the gallery PIN before viewing this photo." },
           { status: 403 }

@@ -79,8 +79,8 @@ export default function TeamEventDetail({ params }) {
             />
           )}
           <p className="text-sm text-muted-foreground">
-            Upload your photos for this event below. The admin selects which ones go into the
-            published gallery.
+            Upload your photos for this event below. You can also view photos already live in the
+            gallery; unpublished uploads from other team members remain private.
           </p>
         </div>
 
@@ -95,7 +95,7 @@ export default function TeamEventDetail({ params }) {
 
         <section className="mt-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Event photos</h2>
+            <h2 className="text-lg font-semibold">Your uploads &amp; published photos</h2>
             {photos && <span className="text-xs text-muted-foreground">{photos.length} photos</span>}
           </div>
           <div className="mt-4">
@@ -103,7 +103,7 @@ export default function TeamEventDetail({ params }) {
             {photos?.length === 0 && (
               <EmptyState
                 title="Nothing uploaded yet"
-                description="Photos uploaded for this event will show up here."
+                description="Your uploads and photos already published to the gallery will show up here."
               />
             )}
             {photos && photos.length > 0 && (

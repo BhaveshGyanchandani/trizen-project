@@ -22,9 +22,10 @@ test("event ownership and assignment are scoped to the current event", () => {
   assert.equal(canAccessEventPhotos(event, unassignedMember), false);
 });
 
-test("team members can view only their own uploads unless PIN gallery access is granted", () => {
+test("team members can view only their own uploads or already-published photos", () => {
   assert.equal(canReadPhoto({ event, photo, user: assignedMember }), true);
   assert.equal(canReadPhoto({ event, photo, user: unassignedMember }), false);
   assert.equal(canReadPhoto({ event, photo: { uploadedBy: "team-2" }, user: assignedMember }), false);
+  assert.equal(canReadPhoto({ event, photo: { uploadedBy: "team-2" }, user: assignedMember, isPublished: true }), true);
   assert.equal(canReadPhoto({ event, photo, user: null, hasGalleryAccess: true }), true);
 });
