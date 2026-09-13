@@ -11,7 +11,6 @@ import PhotoGrid, { PhotoGridSkeleton } from "@/components/PhotoGrid";
 import Loader from "@/components/Loader";
 
 function photoSrc(photo) {
-  if (photo.gridfsId) return `/api/photos/${photo.id ?? photo._id}/file`;
   return photo.storageUrl || photo.url || photo.secure_url;
 }
 
@@ -59,38 +58,39 @@ export default function CustomerGalleryPage({ params }) {
 
   if (!photos) {
     return (
-      <div className="flex min-h-screen flex-col bg-paper text-plate">
-        <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
-          <span className="frame-index text-clay-dim">
-            {meta.photoCount !== undefined ? String(meta.photoCount).padStart(2, "0") : "—"} exposures
-          </span>
-          <h1 className="mt-4 max-w-lg font-display text-4xl leading-tight sm:text-5xl">
+      <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-plate px-6 text-center">
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-to-b from-black/40 via-plate/85 to-plate"
+        />
+        <div className="relative z-[1] max-w-sm">
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-paper-line/80">Gallery</p>
+          <h1 className="mt-3 font-display text-4xl leading-tight text-paper sm:text-5xl">
             {meta.name || "Your photos are ready"}
           </h1>
-          <p className="mt-3 max-w-xs text-sm text-clay">
-            Enter the 6-digit PIN your photographer sent you to open the gallery.
+          <p className="mt-3 text-sm text-clay-dim">
+            {meta.photoCount !== undefined
+              ? `${meta.photoCount} photos are waiting for you — `
+              : ""}
+            enter the PIN your photographer sent you.
           </p>
-          <div className="mt-9">
+          <div className="mt-8 flex justify-center">
             <PinEntryForm onSubmit={handleVerify} />
           </div>
         </div>
-        <footer className="px-6 pb-8 text-center font-mono text-[11px] text-clay-dim">
-          Shared via Trizen Photo Ops
-        </footer>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-paper text-plate">
-      <header className="border-b border-paper-line px-6 py-10 sm:py-14">
-        <div className="mx-auto max-w-5xl text-center">
-          <span className="frame-index text-clay-dim">{String(photos.length).padStart(2, "0")} exposures</span>
-          <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">{meta.name}</h1>
-        </div>
+      <header className="border-b border-paper-line px-6 py-10 text-center sm:py-14">
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-clay">Gallery</p>
+        <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">{meta.name}</h1>
+        <p className="mt-2 text-sm text-clay">{photos.length} photos</p>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         {photos.length === 0 ? (
           <PhotoGridSkeleton count={0} />
         ) : (

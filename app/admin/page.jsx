@@ -11,7 +11,8 @@ import Modal from "@/components/Modal";
 import EmptyState from "@/components/EmptyState";
 import EventCard from "@/components/EventCard";
 import Loader from "@/components/Loader";
-import SummaryStrip from "@/components/SummaryStrip";
+import Topbar from "@/components/Topbar";
+import KpiRow from "@/components/KpiRow";
 
 export default function AdminDashboard() {
   const [events, setEvents] = useState(null); // null = loading
@@ -34,34 +35,28 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const totalPhotos = events?.reduce((sum, e) => sum + (e.photoCount ?? e.photos?.length ?? 0), 0);
+  const publishedCount = events?.filter(
+    (e) => (e.gallery?.status ?? e.galleryStatus) === "published"
+  ).length;
+
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-3xl">Events</h1>
-          <p className="mt-1 text-sm text-ash">Every event you&apos;re running, in one place.</p>
-        </div>
-        <Button onClick={() => setModalOpen(true)}>Create event</Button>
-      </div>
+      <Topbar eyebrow="STUDIO CONSOLE" title="Events">
+        <Button onClick={() => setModalOpen(true)}>+ Create event</Button>
+      </Topbar>
 
-      {events && events.length > 0 && (
-        <SummaryStrip
-          stats={[
-            { label: "Events", value: events.length },
-            {
-              label: "Photos",
-              value: events.reduce((sum, e) => sum + (e.photoCount ?? 0), 0),
-            },
-            {
-              label: "Published",
-              value: events.filter((e) => (e.gallery?.status ?? e.galleryStatus) === "published")
-                .length,
-            },
-          ]}
-        />
-      )}
+      <div className="px-8 py-7">
+        {events && events.length > 0 && (
+          <KpiRow
+            stats={[
+              { label: "TOTAL EVENTS", value: events.length },
+              { label: "PHOTOS UPLOADED", value: totalPhotos },
+              { label: "GALLERIES LIVE", value: publishedCount, tone: "develop" },
+            ]}
+          />
+        )}
 
-      <div className="mt-8">
         {events === null && (
           <div className="flex justify-center py-16">
             <Loader label="Loading events" />
@@ -76,9 +71,13 @@ export default function AdminDashboard() {
         )}
         {events && events.length > 0 && (
           <div>
-            {events.map((event) => (
-              <EventCard key={idOf(event)} event={event} href={`/admin/events/${idOf(event)}`} />
-            ))}
+            <h2 className="mb-1 font-display text-lg">Every event you&apos;re running</h2>
+            <p className="mb-4 text-sm text-ash">Sorted by most recently active.</p>
+            <div className="rounded-[var(--radius-proof)] border border-line bg-ink-soft px-3">
+              {events.map((event) => (
+                <EventCard key={idOf(event)} event={event} href={`/admin/events/${idOf(event)}`} />
+              ))}
+            </div>
           </div>
         )}
       </div>

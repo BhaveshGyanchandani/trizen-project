@@ -10,6 +10,7 @@ import Field, { inputClass } from "@/components/Field";
 import Modal from "@/components/Modal";
 import EmptyState from "@/components/EmptyState";
 import Loader from "@/components/Loader";
+import Topbar from "@/components/Topbar";
 
 function randomPassword() {
   return Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4);
@@ -38,15 +39,15 @@ export default function TeamPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-3xl">Team</h1>
-          <p className="mt-1 text-sm text-ash">People you&apos;ve added who can upload to your events.</p>
-        </div>
-        <Button onClick={() => setModalOpen(true)}>Add team member</Button>
-      </div>
+      <Topbar eyebrow="STUDIO CONSOLE" title="Team">
+        <Button onClick={() => setModalOpen(true)}>+ Add team member</Button>
+      </Topbar>
 
-      <div className="mt-8">
+      <div className="px-8 py-7">
+        <p className="mb-5 text-sm text-ash">
+          People you&apos;ve added who can upload photos to the events they&apos;re assigned to.
+        </p>
+
         {members === null && (
           <div className="flex justify-center py-16">
             <Loader label="Loading team" />
@@ -60,19 +61,41 @@ export default function TeamPage() {
           />
         )}
         {members && members.length > 0 && (
-          <ul>
-            {members.map((member) => (
-              <li
-                key={idOf(member)}
-                className="flex items-center justify-between border-b border-line py-4 last:border-b-0"
-              >
-                <div>
-                  <p className="font-medium">{member.name}</p>
-                  <p className="text-sm text-ash">{member.email}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-hidden rounded-[var(--radius-proof)] border border-line bg-ink-soft">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="border-b border-line px-3.5 pb-2.5 pt-3.5 text-left font-mono text-[10.5px] tracking-wide text-ash-dim">
+                    NAME
+                  </th>
+                  <th className="border-b border-line px-3.5 pb-2.5 pt-3.5 text-left font-mono text-[10.5px] tracking-wide text-ash-dim">
+                    EMAIL
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member) => (
+                  <tr key={idOf(member)} className="transition-colors hover:bg-ink-raised">
+                    <td className="border-b border-line-soft px-3.5 py-3 text-[13px] font-medium last:border-b-0">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-line bg-ink-raised font-mono text-[11.5px] text-bone">
+                          {member.name
+                            ?.split(/\s+/)
+                            .slice(0, 2)
+                            .map((p) => p[0]?.toUpperCase())
+                            .join("")}
+                        </span>
+                        {member.name}
+                      </div>
+                    </td>
+                    <td className="border-b border-line-soft px-3.5 py-3 text-[13px] text-ash last:border-b-0">
+                      {member.email}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

@@ -7,6 +7,8 @@ import { useToast } from "@/lib/useToast";
 import EventCard from "@/components/EventCard";
 import EmptyState from "@/components/EmptyState";
 import Loader from "@/components/Loader";
+import Topbar from "@/components/Topbar";
+import KpiRow from "@/components/KpiRow";
 
 export default function TeamDashboard() {
   const [events, setEvents] = useState(null);
@@ -25,10 +27,15 @@ export default function TeamDashboard() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl">Your events</h1>
-      <p className="mt-1 text-sm text-ash">Events you&apos;ve been assigned to upload photos for.</p>
+      <Topbar eyebrow="TEAM WORKSPACE" title="Your events" />
 
-      <div className="mt-8">
+      <div className="px-8 py-7">
+        {events && events.length > 0 && (
+          <KpiRow stats={[{ label: "EVENTS ASSIGNED", value: events.length }]} />
+        )}
+
+        <p className="mb-4 text-sm text-ash">Events you&apos;ve been assigned to upload photos for.</p>
+
         {events === null && (
           <div className="flex justify-center py-16">
             <Loader label="Loading events" />
@@ -41,7 +48,7 @@ export default function TeamDashboard() {
           />
         )}
         {events && events.length > 0 && (
-          <div>
+          <div className="rounded-[var(--radius-proof)] border border-line bg-ink-soft px-3">
             {events.map((event) => (
               <EventCard key={idOf(event)} event={event} href={`/team/events/${idOf(event)}`} />
             ))}

@@ -28,7 +28,7 @@ export async function GET(req, { params }) {
     await connectDB();
 
     const photo = await Photo.findById(id);
-    if (!photo || !photo.gridfsId) {
+    if (!photo) {
       return NextResponse.json({ success: false, message: "Photo not found." }, { status: 404 });
     }
 
@@ -48,29 +48,37 @@ export async function GET(req, { params }) {
       }
     }
 
-    const bucket = await getPhotosBucket();
-    const downloadStream = bucket.openDownloadStream(photo.gridfsId);
+    if (photo.storageUrl) {
+      return NextResponse.redirect(new URL(photo.storageUrl, req.url));
+    }
 
-    const body = new ReadableStream({
-      start(controller) {
-        downloadStream.on("data", (chunk) => controller.enqueue(chunk));
-        downloadStream.on("end", () => controller.close());
-        downloadStream.on("error", (err) => controller.error(err));
-      },
-      cancel() {
-        downloadStream.destroy();
-      },
-    });
+    if (photo.gridfsId) {
+      const bucket = await getPhotosBucket();
+      const downloadStream = bucket.openDownloadStream(photo.gridfsId);
 
-    return new Response(body, {
-      status: 200,
-      headers: {
-        "Content-Type": photo.contentType || "application/octet-stream",
-        "Cache-Control": publiclyVisible
-          ? "public, max-age=31536000, immutable"
-          : "private, no-store",
-      },
-    });
+      const body = new ReadableStream({
+        start(controller) {
+          downloadStream.on("data", (chunk) => controller.enqueue(chunk));
+          downloadStream.on("end", () => controller.close());
+          downloadStream.on("error", (err) => controller.error(err));
+        },
+        cancel() {
+          downloadStream.destroy();
+        },
+      });
+
+      return new Response(body, {
+        status: 200,
+        headers: {
+          "Content-Type": photo.contentType || "application/octet-stream",
+          "Cache-Control": publiclyVisible
+            ? "public, max-age=31536000, immutable"
+            : "private, no-store",
+        },
+      });
+    }
+
+    return NextResponse.json({ success: false, message: "Photo file not found." }, { status: 404 });
   } catch (error) {
     if (error?.name === "MongoRuntimeError" || /file.*not found/i.test(error?.message || "")) {
       return NextResponse.json({ success: false, message: "Photo file not found." }, { status: 404 });

@@ -31,12 +31,50 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    photo.selectedForGallery = Boolean(selected);
-    await photo.save();
+    // Already-live photos are locked from this endpoint — the customer may
+    // have already seen or downloaded them, so pulling one back out of
+    // "selected" here would silently drop it from the gallery without an
+    // explicit unpublish/republish cycle. Unselecting a live photo has to
+    // go through unpublish first.
+    if (photo.publishedForGallery) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "This photo is already live in the published gallery. Unpublish the gallery first to change it.",
+        },
+        { status: 409 }
+      );
+    }
+
+    // Atomic update instead of findById + mutate + save(). Two rapid
+    // toggles on the same photo (a fast double-click, a slow network
+    // making someone click twice) used to race two `.save()` calls against
+    // the same document version and throw an unhandled VersionError — a
+    // 500 with no useful message. findOneAndUpdate has no document version
+    // to conflict on, so the race just resolves to "last write wins"
+    // instead of throwing. We also re-check publishedForGallery in the
+    // query itself, so a photo that got published by another request in
+    // between our read above and this write still can't be silently
+    // unselected.
+    const updated = await Photo.findOneAndUpdate(
+      { _id: id, publishedForGallery: { $ne: true } },
+      { $set: { selectedForGallery: Boolean(selected) } },
+      { new: true }
+    );
+
+    if (!updated) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "This photo is already live in the published gallery. Unpublish the gallery first to change it.",
+        },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: { id: photo._id, selectedForGallery: photo.selectedForGallery },
+      data: { id: updated._id, selectedForGallery: updated.selectedForGallery },
     });
   } catch (error) {
     return NextResponse.json(

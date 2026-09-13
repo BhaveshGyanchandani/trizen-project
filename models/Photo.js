@@ -5,18 +5,22 @@ const PhotoSchema = new mongoose.Schema(
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: "Event", required: true, index: true },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     filename: { type: String, required: true },
-    // Exactly one of these is set depending on which storage backend wrote
-    // the file. storageUrl: local-disk path under /uploads (or a future
-    // cloud URL). gridfsId: id of the file in the "photos" GridFS bucket,
-    // served back out through GET /api/photos/[id]/file. Neither is
-    // `required` alone since only one is expected per photo.
     storageUrl: { type: String },
     gridfsId: { type: mongoose.Schema.Types.ObjectId },
     contentType: { type: String },
     fileSize: { type: Number },
     selectedForGallery: { type: Boolean, default: false },
+    // Set true the moment a selected photo goes live in a publish. Once
+    // live, the customer may already have seen/downloaded it, so the admin
+    // UI treats it as locked ("already published") rather than a photo
+    // still awaiting a selection decision. Cleared only on unpublish.
+    publishedForGallery: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Photo || mongoose.model("Photo", PhotoSchema);
+if (mongoose.models.Photo) {
+  delete mongoose.models.Photo;
+}
+
+export default mongoose.model("Photo", PhotoSchema);

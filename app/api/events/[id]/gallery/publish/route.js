@@ -50,11 +50,28 @@ export async function POST(req, { params }) {
     }
 
     // Slug stays stable across republishes so a previously shared link
-    // keeps working. The PIN is regenerated every publish and only ever
-    // exists in plaintext for this one response.
-    const plainPin = generatePin();
-    event.galleryPinHash = await bcrypt.hash(plainPin, 10);
+    // keeps working.
+    //
+    // The PIN is only generated on first publish. On every republish after
+    // that we deliberately keep the existing PIN — the customer already
+    // has it, and rotating it on every republish would lock them out for
+    // no reason. The only way the PIN changes after first publish is the
+    // admin explicitly hitting "Regenerate PIN" (separate endpoint).
+    const isFirstPublish = !event.galleryPinHash;
+    let plainPin = null;
+    if (isFirstPublish) {
+      plainPin = generatePin();
+      event.galleryPinHash = await bcrypt.hash(plainPin, 10);
+    }
     event.galleryPublished = true;
+
+    // Every photo currently selected goes live now, so lock it in as
+    // "already published" — the admin UI uses this to stop treating it as
+    // a pending selection decision on future visits.
+    await Photo.updateMany(
+      { eventId: id, selectedForGallery: true },
+      { $set: { publishedForGallery: true } }
+    );
 
     if (!event.gallerySlug) {
       for (let attempt = 0; attempt < 5; attempt++) {
@@ -79,7 +96,11 @@ export async function POST(req, { params }) {
         status: "published",
         slug: event.gallerySlug,
         url: `${origin}/gallery/${event.gallerySlug}`,
+        // Only present on first publish — republishes reuse the existing
+        // PIN, which the admin was already shown once and can't retrieve
+        // again from the server. If they need it again, they regenerate.
         pin: plainPin,
+        isFirstPublish,
       },
     });
   } catch (error) {

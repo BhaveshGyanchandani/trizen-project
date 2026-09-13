@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
-import Photo from "@/models/Photo";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 
+function generatePin() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Explicit admin action to invalidate the current PIN and issue a new one,
+// without touching photo selections or the publish state. Use this when a
+// PIN has leaked, was shared with the wrong person, or the admin just wants
+// a fresh one — as opposed to publish/republish, which now deliberately
+// keeps the existing PIN.
 export async function POST(req, { params }) {
   try {
     const user = await getAuthUser();
@@ -26,24 +35,24 @@ export async function POST(req, { params }) {
         { status: 403 }
       );
     }
+    if (!event.galleryPublished) {
+      return NextResponse.json(
+        { success: false, message: "Publish the gallery before generating a PIN." },
+        { status: 400 }
+      );
+    }
 
-    event.galleryPublished = false;
+    const plainPin = generatePin();
+    event.galleryPinHash = await bcrypt.hash(plainPin, 10);
     await event.save();
 
-    // Nothing is live for the customer anymore, so nothing should still
-    // read as "already published" in the admin picker — the next publish
-    // starts a clean slate of selections to review, same as a first
-    // publish would. The PIN hash is left untouched; republishing later
-    // reuses it as usual.
-    await Photo.updateMany(
-      { eventId: id, publishedForGallery: true },
-      { $set: { publishedForGallery: false } }
-    );
-
-    return NextResponse.json({ success: true, data: { status: "draft" } });
+    return NextResponse.json({
+      success: true,
+      data: { pin: plainPin },
+    });
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to unpublish gallery." },
+      { success: false, message: error.message || "Failed to regenerate PIN." },
       { status: 500 }
     );
   }

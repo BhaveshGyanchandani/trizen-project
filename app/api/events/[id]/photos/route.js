@@ -9,25 +9,22 @@ function serializePhoto(photo) {
   return {
     id: photo._id,
     filename: photo.filename,
-    storageUrl: photo.storageUrl,
-    gridfsId: photo.gridfsId,
+    storageUrl: photo.storageUrl || `/api/photos/${photo._id}/file`,
     fileSize: photo.fileSize,
     selectedForGallery: photo.selectedForGallery,
+    publishedForGallery: photo.publishedForGallery,
     eventId: photo.eventId,
     uploadedBy: photo.uploadedBy,
     createdAt: photo.createdAt,
   };
 }
 
-// Admin-only: every photo on the event, for review + selection.
+// Admin or assigned team member: every photo on the event.
 export async function GET(req, { params }) {
   try {
     const user = await getAuthUser();
-    if (!user || user.role !== "admin") {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized. Admin access required." },
-        { status: 403 }
-      );
+    if (!user) {
+      return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
     }
 
     const { id: eventId } = await params;
@@ -36,7 +33,7 @@ export async function GET(req, { params }) {
     if (!event) {
       return NextResponse.json({ success: false, message: "Event not found." }, { status: 404 });
     }
-    if (!isEventOwner(event, user)) {
+    if (!canAccessEventPhotos(event, user)) {
       return NextResponse.json(
         { success: false, message: "You don't have access to this event." },
         { status: 403 }

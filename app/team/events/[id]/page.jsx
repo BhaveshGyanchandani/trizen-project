@@ -6,6 +6,7 @@ import { useToast } from "@/lib/useToast";
 import PhotoGrid, { PhotoGridSkeleton } from "@/components/PhotoGrid";
 import PhotoUploadForm from "@/components/PhotoUploadForm";
 import EmptyState from "@/components/EmptyState";
+import Topbar from "@/components/Topbar";
 
 export default function TeamEventDetail({ params }) {
   const { id } = use(params);
@@ -17,7 +18,7 @@ export default function TeamEventDetail({ params }) {
 
   const loadPhotos = async () => {
     try {
-      const data = await photosAPI.listMineForEvent(id);
+      const data = await photosAPI.listAllForEvent(id);
       setPhotos(Array.isArray(data) ? data : data?.photos || []);
     } catch (err) {
       if (err.status === 403) setForbidden(true);
@@ -39,43 +40,61 @@ export default function TeamEventDetail({ params }) {
 
   if (forbidden) {
     return (
-      <EmptyState
-        title="You're not assigned to this event"
-        description="Ask your admin to assign you if you think this is a mistake."
-      />
+      <div className="px-8 py-7">
+        <EmptyState
+          title="You're not assigned to this event"
+          description="Ask your admin to assign you if you think this is a mistake."
+        />
+      </div>
     );
   }
 
   return (
     <div>
-      <h1 className="font-display text-3xl">{event?.name || "Loading…"}</h1>
-      <p className="mt-1 text-sm text-ash">Upload your photos for this event below.</p>
+      <Topbar eyebrow={`YOUR EVENTS / ${(event?.name || "").toUpperCase()}`} title={event?.name || "Loading…"} />
 
-      <section className="mt-8">
-        <PhotoUploadForm
-          eventId={id}
-          onUploaded={() => {
-            loadPhotos();
-          }}
-        />
-      </section>
-
-      <section className="mt-10">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl">Your uploads</h2>
-          {photos && <span className="font-mono text-xs text-ash">{photos.length} photos</span>}
-        </div>
-        <div className="mt-4">
-          {photos === null && <PhotoGridSkeleton count={8} />}
-          {photos?.length === 0 && (
-            <EmptyState
-              title="Nothing uploaded yet"
-              description="Photos you upload for this event will show up here."
+      <div className="max-w-[920px] px-8 py-7">
+        <div className="mb-5 flex items-center gap-3">
+          {event?.coverPhotoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={event.coverPhotoUrl}
+              alt=""
+              className="h-12 w-12 shrink-0 rounded-[var(--radius-proof)] border border-line object-cover"
             />
           )}
-          {photos && photos.length > 0 && <PhotoGrid photos={photos} tone="ink" />}
+          <p className="text-sm text-ash">
+            Upload your photos for this event below. The admin selects which ones go into the
+            published gallery.
+          </p>
         </div>
-      </section>
+
+        <section>
+          <PhotoUploadForm
+            eventId={id}
+            onUploaded={() => {
+              loadPhotos();
+            }}
+          />
+        </section>
+
+        <section className="mt-10">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-lg">Event photos</h2>
+            {photos && <span className="font-mono text-xs text-ash">{photos.length} photos</span>}
+          </div>
+          <div className="mt-4">
+            {photos === null && <PhotoGridSkeleton count={8} />}
+            {photos?.length === 0 && (
+              <EmptyState
+                title="Nothing uploaded yet"
+                description="Photos uploaded for this event will show up here."
+              />
+            )}
+            {photos && photos.length > 0 && <PhotoGrid photos={photos} tone="ink" />}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
-import Navbar from "@/components/Navbar";
+import Sidebar from "@/components/Sidebar";
 import Loader from "@/components/Loader";
 
 export default function TeamLayout({ children }) {
@@ -28,9 +28,9 @@ export default function TeamLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-ink">
-      <Navbar />
-      <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
+    <div className="flex min-h-screen bg-ink">
+      <Sidebar />
+      <main className="min-w-0 flex-1">{children}</main>
     </div>
   );
 }
