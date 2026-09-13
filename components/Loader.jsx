@@ -1,15 +1,11 @@
-export default function Loader({ label = "Loading", tone = "ink" }) {
-  const text = tone === "paper" ? "text-clay" : "text-ash";
+import { Loader2 } from "lucide-react";
+
+// `tone` is no longer meaningful (one register throughout) but kept so
+// existing call sites (tone="paper" / tone="ink") don't all need editing.
+export default function Loader({ label = "Loading" }) {
   return (
-    <div className={`flex items-center gap-3 font-mono text-xs tracking-wide ${text}`}>
-      <span className="relative flex h-3 w-3">
-        <span
-          className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${
-            tone === "paper" ? "bg-safelight" : "bg-safelight"
-          }`}
-        />
-        <span className="relative inline-flex h-3 w-3 rounded-full bg-safelight" />
-      </span>
+    <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+      <Loader2 className="size-4 animate-spin text-primary" />
       {label}
     </div>
   );

@@ -27,14 +27,14 @@ export default function TeamDashboard() {
 
   return (
     <div>
-      <Topbar eyebrow="TEAM WORKSPACE" title="Your events" />
+      <Topbar eyebrow="Team workspace" title="Your events" />
 
-      <div className="px-8 py-7">
+      <div className="px-5 py-7 sm:px-8">
         {events && events.length > 0 && (
-          <KpiRow stats={[{ label: "EVENTS ASSIGNED", value: events.length }]} />
+          <KpiRow stats={[{ label: "Events assigned", value: events.length }]} />
         )}
 
-        <p className="mb-4 text-sm text-ash">Events you&apos;ve been assigned to upload photos for.</p>
+        <p className="mb-4 text-sm text-muted-foreground">Events you&apos;ve been assigned to upload photos for.</p>
 
         {events === null && (
           <div className="flex justify-center py-16">
@@ -48,7 +48,7 @@ export default function TeamDashboard() {
           />
         )}
         {events && events.length > 0 && (
-          <div className="rounded-[var(--radius-proof)] border border-line bg-ink-soft px-3">
+          <div className="rounded-xl border border-border bg-card px-1">
             {events.map((event) => (
               <EventCard key={idOf(event)} event={event} href={`/team/events/${idOf(event)}`} />
             ))}

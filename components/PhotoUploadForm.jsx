@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { UploadCloud, X } from "lucide-react";
 import { photosAPI } from "@/lib/api";
 import { useToast } from "@/lib/useToast";
 import Button from "./Button";
@@ -61,12 +62,13 @@ export default function PhotoUploadForm({ eventId, onUploaded }) {
           setDragOver(false);
           addFiles(e.dataTransfer.files);
         }}
-        className={`rounded-[var(--radius-proof)] border border-dashed px-6 py-10 text-center transition-colors ${
-          dragOver ? "border-safelight bg-safelight-tint/5" : "border-line"
+        className={`rounded-xl border border-dashed px-6 py-10 text-center transition-colors ${
+          dragOver ? "border-primary bg-primary/5" : "border-border"
         }`}
       >
-        <p className="font-display text-lg">Drop photos here</p>
-        <p className="mt-1 text-sm text-ash">or select files from your device</p>
+        <UploadCloud className="mx-auto mb-2 size-6 text-muted-foreground" />
+        <p className="text-[15px] font-medium">Drop photos here</p>
+        <p className="mt-1 text-sm text-muted-foreground">or select files from your device</p>
         <input
           ref={inputRef}
           type="file"
@@ -87,24 +89,24 @@ export default function PhotoUploadForm({ eventId, onUploaded }) {
 
       {files.length > 0 && (
         <div className="mt-4">
-          <p className="mb-2 text-sm text-ash">{files.length} selected</p>
+          <p className="mb-2 text-sm text-muted-foreground">{files.length} selected</p>
           <ul className="max-h-56 space-y-1 overflow-y-auto pr-1">
             {files.map((file, i) => (
               <li
                 key={`${file.name}-${i}`}
-                className="flex items-center justify-between rounded-[var(--radius-proof)] border border-line bg-ink-soft px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm"
               >
                 <span className="truncate">{file.name}</span>
-                <span className="ml-3 flex shrink-0 items-center gap-3 font-mono text-xs text-ash">
+                <span className="ml-3 flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
                   {formatBytes(file.size)}
                   <button
                     type="button"
                     onClick={() => removeFile(i)}
                     disabled={uploading}
-                    className="text-ash transition-colors hover:text-safelight disabled:opacity-40"
+                    className="text-muted-foreground transition-colors hover:text-destructive disabled:opacity-40"
                     aria-label={`Remove ${file.name}`}
                   >
-                    ✕
+                    <X className="size-3.5" />
                   </button>
                 </span>
               </li>
@@ -112,20 +114,12 @@ export default function PhotoUploadForm({ eventId, onUploaded }) {
           </ul>
 
           {uploading && (
-            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-ink-soft">
-              <div
-                className="h-full bg-safelight transition-[width]"
-                style={{ width: `${progress}%` }}
-              />
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} />
             </div>
           )}
 
-          <Button
-            type="button"
-            className="mt-4"
-            onClick={handleUpload}
-            disabled={uploading}
-          >
+          <Button type="button" className="mt-4" onClick={handleUpload} disabled={uploading}>
             {uploading ? `Uploading ${progress}%` : `Upload ${files.length} photo${files.length > 1 ? "s" : ""}`}
           </Button>
         </div>

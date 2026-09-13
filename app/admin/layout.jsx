@@ -3,8 +3,9 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
-import Sidebar from "@/components/Sidebar";
+import AppSidebar from "@/components/AppSidebar";
 import Loader from "@/components/Loader";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default function AdminLayout({ children }) {
   const { user, status } = useAuth();
@@ -21,16 +22,16 @@ export default function AdminLayout({ children }) {
 
   if (status !== "ready" || !user || user.role !== "admin") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-ink">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader label="Checking access" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-ink">
-      <Sidebar />
+    <SidebarProvider>
+      <AppSidebar />
       <main className="min-w-0 flex-1">{children}</main>
-    </div>
+    </SidebarProvider>
   );
 }

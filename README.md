@@ -60,22 +60,32 @@ protected route reads it via `getAuthUser()` in `lib/authHelper.js`.
 Role and event-ownership/assignment checks happen server-side on every
 event-scoped route (not just in the UI) — see "Security" below.
 
+## Design system
+
+UI is built on real shadcn/ui primitives (ported to plain JS under
+`components/ui/`, since this project doesn't use TypeScript) — Button,
+Card, Table, Badge, Dialog, Tabs, Sidebar, etc. — styled with one shared
+token set in `app/globals.css` (a neutral stone paper background, ink
+text, and a single muted slate-teal accent). The same tokens drive all
+three surfaces (admin, team, customer gallery) rather than switching
+typefaces or color registers between them. App-level components like
+`Button.jsx` and `Badge.jsx` are thin compatibility wrappers over the
+`components/ui/*` primitives, mapping this app's existing prop names
+(`variant="danger"`, `tone="published"`, etc.) onto shadcn's variants.
+
 ## Photo storage
 
-Photos are saved to local disk (`public/uploads/<eventId>/...`) with only
-the resulting URL stored in MongoDB — Photo documents never hold image
-bytes. That satisfies the spirit of the PDF's storage requirement, but
-**not the letter of it for a real deployment**: the PDF asks for actual
-object storage (S3/Azure Blob/GCS/equivalent), and most hosts (Vercel
-included) run serverless functions with an ephemeral filesystem, so files
-written here won't survive between requests once deployed there.
+Photos are saved to MongoDB itself via GridFS — not local disk, and not a
+third-party object store. Photo documents only ever hold a reference
+(`gridfsId` + `contentType`), never the bytes themselves; reads go through
+`GET /api/photos/[id]/file`, which streams the bucket's download stream
+back as the response. This works identically in local dev and on
+serverless hosts like Vercel, since both just need a MongoDB connection
+string — no bucket/IAM setup, no ephemeral-filesystem surprises.
 
 This is intentionally isolated to one file, `lib/storage.js` — it's the
-only place that writes a photo anywhere. Swapping in real object storage
-(Cloudinary has the fastest setup — one upload call, no bucket/IAM
-config) before you deploy is a change to that one function; nothing else
-in the app needs to know where bytes end up. A worked Cloudinary example
-is commented at the top of that file.
+only place that writes a photo anywhere, so swapping in a different
+backend later (S3, Cloudinary, etc.) only touches that file.
 
 ## Security
 
@@ -95,8 +105,6 @@ is commented at the top of that file.
 
 ## Known limitations
 
-- **Local disk storage** — see above; fine for `npm run dev`/`npm start`
-  on your own machine, not for serverless deployment as-is.
 - **No unassign-from-event route** — matches the documented API surface;
   the UI doesn't offer removing an assignment either.
 - **Upload progress is per-batch**, not per-file — one multipart request

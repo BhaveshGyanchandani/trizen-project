@@ -1,17 +1,18 @@
-const tones = {
-  neutral: "border-line text-ash",
-  "neutral-paper": "border-paper-line text-clay",
-  published: "border-develop/50 text-develop bg-develop-tint/10",
-  draft: "border-warn/50 text-warn bg-warn-tint/10",
-  role: "border-safelight/50 text-safelight bg-safelight-tint/10",
+import { Badge as ShadcnBadge } from "@/components/ui/badge";
+
+// Thin compatibility layer over the real shadcn Badge (components/ui/badge.jsx)
+// mapping this app's semantic tones onto shadcn's variant names.
+const toneMap = {
+  neutral: "outline",
+  published: "success",
+  draft: "warning",
+  role: "secondary",
 };
 
-export default function Badge({ tone = "neutral", children }) {
+export default function Badge({ tone = "neutral", children, className }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-[var(--radius-proof)] border px-2 py-0.5 font-mono text-[11px] tracking-wide ${tones[tone]}`}
-    >
+    <ShadcnBadge variant={toneMap[tone] || "outline"} className={className}>
       {children}
-    </span>
+    </ShadcnBadge>
   );
 }

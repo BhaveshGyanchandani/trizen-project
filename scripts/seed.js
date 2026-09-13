@@ -11,8 +11,6 @@
 
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const fs = require("fs");
-const path = require("path");
 
 const MONGODB_URL = process.env.MONGODB_URL;
 if (!MONGODB_URL) {
@@ -51,7 +49,8 @@ const PhotoSchema = new mongoose.Schema(
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: "Event" },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     filename: String,
-    storageUrl: String,
+    gridfsId: mongoose.Schema.Types.ObjectId,
+    contentType: String,
     fileSize: Number,
     selectedForGallery: { type: Boolean, default: false },
   },
@@ -109,26 +108,67 @@ async function main() {
   }
 
   const existingPhotoCount = await Photo.countDocuments({ eventId: event._id });
-  if (existingPhotoCount === 0) {
-    const dir = path.join(process.cwd(), "public", "uploads", String(event._id));
-    fs.mkdirSync(dir, { recursive: true });
+  const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+    bucketName: "photos",
+  });
 
+  if (existingPhotoCount === 0) {
     for (const [index, sample] of SAMPLE_PHOTOS.entries()) {
       const buffer = Buffer.from(sample.base64, "base64");
-      const diskName = `seed-${index}-${sample.filename}`;
-      fs.writeFileSync(path.join(dir, diskName), buffer);
+      const contentType = "image/jpeg";
+
+      const gridfsId = await new Promise((resolve, reject) => {
+        const uploadStream = bucket.openUploadStream(sample.filename, {
+          contentType,
+          metadata: { eventId: String(event._id) },
+        });
+        uploadStream.on("error", reject);
+        uploadStream.on("finish", () => resolve(uploadStream.id));
+        uploadStream.end(buffer);
+      });
+
       await Photo.create({
         eventId: event._id,
         uploadedBy: team._id,
         filename: sample.filename,
-        storageUrl: `/uploads/${event._id}/${diskName}`,
+        gridfsId,
+        contentType,
         fileSize: buffer.length,
         selectedForGallery: true,
       });
     }
-    console.log(`Seeded ${SAMPLE_PHOTOS.length} sample photos, all selected for the gallery.`);
+    console.log(`Seeded ${SAMPLE_PHOTOS.length} sample photos (via GridFS), all selected for the gallery.`);
   } else {
-    console.log(`Event already has ${existingPhotoCount} photo(s) — leaving them as is.`);
+    console.log(`Event already has ${existingPhotoCount} photo(s) — ensuring GridFS storage.`);
+    const existingPhotos = await Photo.find({ eventId: event._id });
+    for (const photo of existingPhotos) {
+      if (!photo.gridfsId) {
+        const sample = SAMPLE_PHOTOS[0];
+        const buffer = Buffer.from(sample.base64, "base64");
+        const contentType = "image/jpeg";
+
+        const gridfsId = await new Promise((resolve, reject) => {
+          const uploadStream = bucket.openUploadStream(photo.filename || "photo.jpg", {
+            contentType,
+            metadata: { eventId: String(event._id) },
+          });
+          uploadStream.on("error", reject);
+          uploadStream.on("finish", () => resolve(uploadStream.id));
+          uploadStream.end(buffer);
+        });
+
+        photo.gridfsId = gridfsId;
+        photo.contentType = contentType;
+        await photo.save();
+      }
+    }
+  }
+
+  const firstPhoto = await Photo.findOne({ eventId: event._id, gridfsId: { $exists: true } });
+  if (firstPhoto && !event.coverPhotoGridfsId) {
+    event.coverPhotoGridfsId = firstPhoto.gridfsId;
+    event.coverPhotoContentType = firstPhoto.contentType || "image/jpeg";
+    await event.save();
   }
 
   if (!event.galleryPublished) {

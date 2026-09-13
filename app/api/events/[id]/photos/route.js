@@ -9,7 +9,7 @@ function serializePhoto(photo) {
   return {
     id: photo._id,
     filename: photo.filename,
-    storageUrl: photo.storageUrl || `/api/photos/${photo._id}/file`,
+    storageUrl: `/api/photos/${photo._id}/file`,
     fileSize: photo.fileSize,
     selectedForGallery: photo.selectedForGallery,
     publishedForGallery: photo.publishedForGallery,

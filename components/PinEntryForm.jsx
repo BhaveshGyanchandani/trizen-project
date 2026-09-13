@@ -37,10 +37,10 @@ export default function PinEntryForm({ onSubmit }) {
         className={`${inputClass("paper", errors.pin || serverError)} text-center font-mono text-2xl tracking-[0.35em]`}
       />
       {errors.pin && (
-        <p className="mt-2 text-center text-xs text-safelight">Enter the 6-digit PIN you were given.</p>
+        <p className="mt-2 text-center text-xs text-destructive">Enter the 6-digit PIN you were given.</p>
       )}
       {serverError && !errors.pin && (
-        <p className="mt-2 text-center text-xs text-safelight">{serverError}</p>
+        <p className="mt-2 text-center text-xs text-destructive">{serverError}</p>
       )}
       <Button type="submit" disabled={isSubmitting} className="mt-4 w-full">
         {isSubmitting ? "Checking…" : "View gallery"}

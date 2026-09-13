@@ -17,10 +17,6 @@
 /.next/
 /out/
 
-# locally stored photo uploads — not meant to be committed
-/public/uploads/*
-!/public/uploads/.gitkeep
-
 # production
 /build
 

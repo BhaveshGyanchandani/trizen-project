@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
+import { Copy, ShieldCheck } from "lucide-react";
 import { eventsAPI, teamMembersAPI, photosAPI, galleryAdminAPI } from "@/lib/api";
 import { idOf } from "@/lib/idOf";
 import { useToast } from "@/lib/useToast";
@@ -13,6 +14,7 @@ import PhotoGrid, { PhotoGridSkeleton } from "@/components/PhotoGrid";
 import SummaryStrip from "@/components/SummaryStrip";
 import Topbar from "@/components/Topbar";
 import Field, { inputClass } from "@/components/Field";
+import { Card, CardContent } from "@/components/ui/card";
 
 function normalizeGallery(data) {
   if (!data) return { status: "draft" };
@@ -185,7 +187,7 @@ export default function AdminEventDetail({ params }) {
 
   if (notFound) {
     return (
-      <div className="px-8 py-7">
+      <div className="px-5 py-7 sm:px-8">
         <EmptyState
           title="This event isn't available"
           description="It may belong to a different admin account, or the link is out of date."
@@ -199,7 +201,7 @@ export default function AdminEventDetail({ params }) {
 
   return (
     <div>
-      <Topbar eyebrow={`EVENTS / ${(event?.name || "").toUpperCase()}`} title={event?.name || "Loading…"}>
+      <Topbar eyebrow={`Events / ${event?.name || ""}`} title={event?.name || "Loading…"}>
         {event && (
           <Button variant="secondary" onClick={() => setEditOpen(true)}>
             Edit event
@@ -207,7 +209,7 @@ export default function AdminEventDetail({ params }) {
         )}
       </Topbar>
 
-      <div className="px-8 py-7">
+      <div className="px-5 py-7 sm:px-8">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="min-w-[320px] flex-1">
             <SummaryStrip
@@ -219,7 +221,7 @@ export default function AdminEventDetail({ params }) {
               ]}
             />
           </div>
-          <div className="w-[280px] shrink-0">
+          <div className="w-full shrink-0 sm:w-[280px]">
             <GalleryStatusPanel
               gallery={gallery}
               totalReadyCount={totalReadyCount}
@@ -233,8 +235,8 @@ export default function AdminEventDetail({ params }) {
         </div>
 
       <section className="mt-10">
-        <h2 className="font-display text-xl">Team on this event</h2>
-        <p className="mt-1 text-sm text-ash">
+        <h2 className="text-lg font-semibold">Team on this event</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Assigning gives someone upload access. Assignments can&apos;t be removed here.
         </p>
         {allTeamMembers === null ? (
@@ -242,7 +244,7 @@ export default function AdminEventDetail({ params }) {
             <Loader label="Loading team" />
           </div>
         ) : allTeamMembers.length === 0 ? (
-          <p className="mt-4 text-sm text-ash">
+          <p className="mt-4 text-sm text-muted-foreground">
             You haven&apos;t added any team members yet — do that from the Team page first.
           </p>
         ) : (
@@ -256,7 +258,7 @@ export default function AdminEventDetail({ params }) {
               <button
                 key={idOf(m)}
                 onClick={() => handleAssign(idOf(m))}
-                className="rounded-[var(--radius-proof)] border border-line px-2.5 py-1 font-mono text-[11px] text-ash transition-colors hover:border-safelight hover:text-safelight"
+                className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
               >
                 + {m.name}
               </button>
@@ -267,7 +269,7 @@ export default function AdminEventDetail({ params }) {
 
       {photos === null && (
         <section className="mt-10">
-          <h2 className="font-display text-xl">Photos</h2>
+          <h2 className="text-lg font-semibold">Photos</h2>
           <div className="mt-4">
             <PhotoGridSkeleton count={12} />
           </div>
@@ -276,7 +278,7 @@ export default function AdminEventDetail({ params }) {
 
       {photos && photos.length === 0 && (
         <section className="mt-10">
-          <h2 className="font-display text-xl">Photos</h2>
+          <h2 className="text-lg font-semibold">Photos</h2>
           <div className="mt-4">
             <EmptyState
               title="No photos uploaded yet"
@@ -291,12 +293,10 @@ export default function AdminEventDetail({ params }) {
           {publishedPhotos.length > 0 && (
             <section className="mt-10">
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-xl">Already published</h2>
-                <span className="font-mono text-xs text-develop">
-                  {publishedPhotos.length} live in gallery
-                </span>
+                <h2 className="text-lg font-semibold">Already published</h2>
+                <span className="text-xs text-success">{publishedPhotos.length} live in gallery</span>
               </div>
-              <p className="mt-1 text-sm text-ash">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Already visible to the customer at this gallery link — locked here so nothing
                 disappears from under them. Unpublish the gallery to make changes.
               </p>
@@ -308,15 +308,15 @@ export default function AdminEventDetail({ params }) {
 
           <section className="mt-10">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl">
+              <h2 className="text-lg font-semibold">
                 {publishedPhotos.length > 0 ? "New uploads" : "Photos"}
               </h2>
-              <span className="font-mono text-xs text-ash">
+              <span className="text-xs text-muted-foreground">
                 {selectedIds.size} of {pendingPhotos.length} selected
               </span>
             </div>
             {publishedPhotos.length > 0 && (
-              <p className="mt-1 text-sm text-ash">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Only these need a decision — select the ones to add to the live gallery.
               </p>
             )}
@@ -370,30 +370,30 @@ function GalleryStatusPanel({
   if (gallery.status === "published") {
     const url = gallery.slug ? `${typeof window !== "undefined" ? window.location.origin : ""}/gallery/${gallery.slug}` : "";
     return (
-      <div className="rounded-[var(--radius-proof)] border border-develop/40 bg-develop-tint/10 px-4 py-3">
-        <div className="flex items-center gap-2">
+      <Card className="border-success/30 bg-success-bg py-4">
+        <CardContent className="px-4">
           <Badge tone="published">Published</Badge>
-        </div>
-        {url && (
-          <p className="mt-2 max-w-[220px] truncate font-mono text-xs text-ash" title={url}>
-            {url}
-          </p>
-        )}
-        <Button onClick={onPublish} disabled={publishing} className="mt-3 w-full">
-          {publishing ? "Republishing…" : "Republish with new selections"}
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={onRegeneratePin}
-          disabled={regenerating}
-          className="mt-2 w-full"
-        >
-          {regenerating ? "Regenerating…" : "Regenerate PIN"}
-        </Button>
-        <Button variant="danger" className="mt-2 w-full" onClick={onUnpublish}>
-          Unpublish
-        </Button>
-      </div>
+          {url && (
+            <p className="mt-2 max-w-[220px] truncate text-xs text-muted-foreground" title={url}>
+              {url}
+            </p>
+          )}
+          <Button onClick={onPublish} disabled={publishing} className="mt-3 w-full">
+            {publishing ? "Republishing…" : "Republish with new selections"}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={onRegeneratePin}
+            disabled={regenerating}
+            className="mt-2 w-full"
+          >
+            {regenerating ? "Regenerating…" : "Regenerate PIN"}
+          </Button>
+          <Button variant="danger" className="mt-2 w-full" onClick={onUnpublish}>
+            Unpublish
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -404,28 +404,35 @@ function GalleryStatusPanel({
   );
 }
 
-function PublishRevealModal({ result, onClose }) {
+function CopyRow({ label, value, mono }) {
   const toast = useToast();
+  return (
+    <div>
+      <p className="mb-1 text-xs text-muted-foreground">{label}</p>
+      <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-3 py-2">
+        <span className={`truncate text-sm ${mono ? "tracking-[0.3em]" : ""}`}>{value}</span>
+        <button
+          className="ml-3 flex shrink-0 items-center gap-1 text-xs text-primary hover:underline"
+          onClick={() => navigator.clipboard.writeText(value || "").then(() => toast.show(`${label} copied.`))}
+        >
+          <Copy className="size-3" /> Copy
+        </button>
+      </div>
+    </div>
+  );
+}
 
+function PublishRevealModal({ result, onClose }) {
   if (result && !result.isFirstPublish) {
     // Republish: PIN unchanged, nothing new to reveal — just confirm.
     return (
       <Modal open={!!result} onClose={onClose} title="Gallery updated">
-        <p className="text-sm text-ash">
+        <p className="text-sm text-muted-foreground">
           The live gallery now reflects your latest selections. The existing PIN still works —
           it doesn&apos;t change on republish.
         </p>
         <div className="mt-4">
-          <p className="mb-1 text-xs text-ash">Gallery link</p>
-          <div className="flex items-center justify-between rounded-[var(--radius-proof)] border border-line bg-ink-soft px-3 py-2">
-            <span className="truncate font-mono text-sm">{result?.url}</span>
-            <button
-              className="ml-3 shrink-0 text-xs text-safelight hover:underline"
-              onClick={() => navigator.clipboard.writeText(result?.url || "").then(() => toast.show("Link copied."))}
-            >
-              Copy
-            </button>
-          </div>
+          <CopyRow label="Gallery link" value={result?.url} />
         </div>
         <Button className="mt-6 w-full" onClick={onClose}>
           Done
@@ -436,35 +443,13 @@ function PublishRevealModal({ result, onClose }) {
 
   return (
     <Modal open={!!result} onClose={onClose} title="Gallery published">
-      <p className="text-sm text-ash">
-        Share this link and PIN with your customer. <span className="text-safelight">The PIN won&apos;t be shown again</span> —
-        copy it now.
+      <p className="flex items-start gap-2 text-sm text-muted-foreground">
+        <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+        Share this link and PIN with your customer. The PIN won&apos;t be shown again — copy it now.
       </p>
       <div className="mt-4 space-y-3">
-        <div>
-          <p className="mb-1 text-xs text-ash">Gallery link</p>
-          <div className="flex items-center justify-between rounded-[var(--radius-proof)] border border-line bg-ink-soft px-3 py-2">
-            <span className="truncate font-mono text-sm">{result?.url}</span>
-            <button
-              className="ml-3 shrink-0 text-xs text-safelight hover:underline"
-              onClick={() => navigator.clipboard.writeText(result?.url || "").then(() => toast.show("Link copied."))}
-            >
-              Copy
-            </button>
-          </div>
-        </div>
-        <div>
-          <p className="mb-1 text-xs text-ash">Access PIN</p>
-          <div className="flex items-center justify-between rounded-[var(--radius-proof)] border border-line bg-ink-soft px-3 py-2">
-            <span className="font-mono text-lg tracking-[0.3em]">{result?.pin}</span>
-            <button
-              className="ml-3 shrink-0 text-xs text-safelight hover:underline"
-              onClick={() => navigator.clipboard.writeText(result?.pin || "").then(() => toast.show("PIN copied."))}
-            >
-              Copy
-            </button>
-          </div>
-        </div>
+        <CopyRow label="Gallery link" value={result?.url} />
+        <CopyRow label="Access PIN" value={result?.pin} mono />
       </div>
       <Button className="mt-6 w-full" onClick={onClose}>
         Done
@@ -474,24 +459,14 @@ function PublishRevealModal({ result, onClose }) {
 }
 
 function PinRevealModal({ result, onClose }) {
-  const toast = useToast();
   return (
     <Modal open={!!result} onClose={onClose} title="PIN regenerated">
-      <p className="text-sm text-ash">
-        The old PIN no longer works. <span className="text-safelight">This new PIN won&apos;t be shown again</span> —
-        copy it and send it to your customer.
+      <p className="text-sm text-muted-foreground">
+        The old PIN no longer works. This new PIN won&apos;t be shown again — copy it and send it
+        to your customer.
       </p>
       <div className="mt-4">
-        <p className="mb-1 text-xs text-ash">Access PIN</p>
-        <div className="flex items-center justify-between rounded-[var(--radius-proof)] border border-line bg-ink-soft px-3 py-2">
-          <span className="font-mono text-lg tracking-[0.3em]">{result?.pin}</span>
-          <button
-            className="ml-3 shrink-0 text-xs text-safelight hover:underline"
-            onClick={() => navigator.clipboard.writeText(result?.pin || "").then(() => toast.show("PIN copied."))}
-          >
-            Copy
-          </button>
-        </div>
+        <CopyRow label="Access PIN" value={result?.pin} mono />
       </div>
       <Button className="mt-6 w-full" onClick={onClose}>
         Done
@@ -560,23 +535,23 @@ function EditEventModal({ open, event, onClose, onSaved }) {
   return (
     <Modal open={open} onClose={onClose} title="Edit event">
       <div className="flex items-start gap-4">
-        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[var(--radius-proof)] border border-line bg-ink-raised">
+        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
           {currentCoverUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={currentCoverUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center font-mono text-[10px] text-ash-dim">
+            <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
               No photo
             </div>
           )}
         </div>
         <div className="flex-1">
-          <p className="mb-1.5 text-xs font-medium text-ash">Cover photo</p>
-          <label className="inline-block cursor-pointer rounded-[var(--radius-proof)] border border-line px-3 py-1.5 text-xs text-ash transition-colors hover:border-safelight hover:text-safelight">
+          <p className="mb-1.5 text-xs font-medium text-muted-foreground">Cover photo</p>
+          <label className="inline-block cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary">
             {coverFile ? coverFile.name : "Choose photo"}
             <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           </label>
-          <p className="mt-1.5 text-[11px] text-ash-dim">Shown on the events dashboard.</p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Shown on the events dashboard.</p>
         </div>
       </div>
 
@@ -585,7 +560,7 @@ function EditEventModal({ open, event, onClose, onSaved }) {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className={inputClass("ink", !!error)}
+            className={inputClass(null, !!error)}
             placeholder="e.g. Arjun & Priya Wedding"
           />
         </Field>

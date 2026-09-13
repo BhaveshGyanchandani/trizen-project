@@ -13,13 +13,13 @@ export async function GET(req, { params }) {
     await connectDB();
 
     const event = await Event.findById(id);
-    if (!event || !event.coverPhotoGridfsId) {
+    if (!event || (!event.coverPhotoGridfsId && !event.coverPhotoUrl)) {
       return NextResponse.json({ success: false, message: "No cover photo set." }, { status: 404 });
     }
 
     const user = await getAuthUser();
     const allowed =
-      !!user && (user.role === "admin" ? isEventOwner(event, user) : isAssignedToEvent(event, user));
+      !!user && (user.role === "admin" || isAssignedToEvent(event, user));
     if (!allowed) {
       return NextResponse.json(
         { success: false, message: "You don't have access to this event." },

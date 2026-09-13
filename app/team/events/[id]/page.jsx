@@ -40,7 +40,7 @@ export default function TeamEventDetail({ params }) {
 
   if (forbidden) {
     return (
-      <div className="px-8 py-7">
+      <div className="px-5 py-7 sm:px-8">
         <EmptyState
           title="You're not assigned to this event"
           description="Ask your admin to assign you if you think this is a mistake."
@@ -51,19 +51,19 @@ export default function TeamEventDetail({ params }) {
 
   return (
     <div>
-      <Topbar eyebrow={`YOUR EVENTS / ${(event?.name || "").toUpperCase()}`} title={event?.name || "Loading…"} />
+      <Topbar eyebrow={`Your events / ${event?.name || ""}`} title={event?.name || "Loading…"} />
 
-      <div className="max-w-[920px] px-8 py-7">
+      <div className="max-w-[920px] px-5 py-7 sm:px-8">
         <div className="mb-5 flex items-center gap-3">
           {event?.coverPhotoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={event.coverPhotoUrl}
               alt=""
-              className="h-12 w-12 shrink-0 rounded-[var(--radius-proof)] border border-line object-cover"
+              className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover"
             />
           )}
-          <p className="text-sm text-ash">
+          <p className="text-sm text-muted-foreground">
             Upload your photos for this event below. The admin selects which ones go into the
             published gallery.
           </p>
@@ -80,8 +80,8 @@ export default function TeamEventDetail({ params }) {
 
         <section className="mt-10">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg">Event photos</h2>
-            {photos && <span className="font-mono text-xs text-ash">{photos.length} photos</span>}
+            <h2 className="text-lg font-semibold">Event photos</h2>
+            {photos && <span className="text-xs text-muted-foreground">{photos.length} photos</span>}
           </div>
           <div className="mt-4">
             {photos === null && <PhotoGridSkeleton count={8} />}
@@ -91,7 +91,7 @@ export default function TeamEventDetail({ params }) {
                 description="Photos uploaded for this event will show up here."
               />
             )}
-            {photos && photos.length > 0 && <PhotoGrid photos={photos} tone="ink" />}
+            {photos && photos.length > 0 && <PhotoGrid photos={photos} />}
           </div>
         </section>
       </div>

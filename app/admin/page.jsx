@@ -42,17 +42,17 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <Topbar eyebrow="STUDIO CONSOLE" title="Events">
+      <Topbar eyebrow="Studio console" title="Events">
         <Button onClick={() => setModalOpen(true)}>+ Create event</Button>
       </Topbar>
 
-      <div className="px-8 py-7">
+      <div className="px-5 py-7 sm:px-8">
         {events && events.length > 0 && (
           <KpiRow
             stats={[
-              { label: "TOTAL EVENTS", value: events.length },
-              { label: "PHOTOS UPLOADED", value: totalPhotos },
-              { label: "GALLERIES LIVE", value: publishedCount, tone: "develop" },
+              { label: "Total events", value: events.length },
+              { label: "Photos uploaded", value: totalPhotos },
+              { label: "Galleries live", value: publishedCount, tone: "success" },
             ]}
           />
         )}
@@ -71,9 +71,9 @@ export default function AdminDashboard() {
         )}
         {events && events.length > 0 && (
           <div>
-            <h2 className="mb-1 font-display text-lg">Every event you&apos;re running</h2>
-            <p className="mb-4 text-sm text-ash">Sorted by most recently active.</p>
-            <div className="rounded-[var(--radius-proof)] border border-line bg-ink-soft px-3">
+            <h2 className="mb-1 text-base font-semibold">Every event you&apos;re running</h2>
+            <p className="mb-4 text-sm text-muted-foreground">Sorted by most recently active.</p>
+            <div className="rounded-xl border border-border bg-card px-1">
               {events.map((event) => (
                 <EventCard key={idOf(event)} event={event} href={`/admin/events/${idOf(event)}`} />
               ))}
@@ -116,7 +116,7 @@ function CreateEventModal({ open, onClose, onCreated }) {
           <input
             autoFocus
             {...register("name", { required: true })}
-            className={inputClass("ink", !!errors.name)}
+            className={inputClass(null, !!errors.name)}
             placeholder="Arjun & Priya Wedding"
           />
         </Field>

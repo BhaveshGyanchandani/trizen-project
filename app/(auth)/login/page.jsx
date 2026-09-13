@@ -30,37 +30,37 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl">Log in</h1>
-      <p className="mt-1 text-sm text-clay">Event leads and team members sign in here.</p>
+      <h1 className="text-2xl font-semibold tracking-tight">Log in</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Event leads and team members sign in here.</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
-        <Field label="Email" tone="paper" error={errors.email && "Enter a valid email."}>
+        <Field label="Email" error={errors.email && "Enter a valid email."}>
           <input
             type="email"
             {...register("email", { required: true })}
-            className={inputClass("paper", !!errors.email)}
+            className={inputClass(null, !!errors.email)}
             placeholder="you@studio.com"
           />
         </Field>
-        <Field label="Password" tone="paper" error={errors.password && "Password is required."}>
+        <Field label="Password" error={errors.password && "Password is required."}>
           <input
             type="password"
             {...register("password", { required: true })}
-            className={inputClass("paper", !!errors.password)}
+            className={inputClass(null, !!errors.password)}
             placeholder="••••••••"
           />
         </Field>
 
-        {serverError && <p className="text-sm text-safelight">{serverError}</p>}
+        {serverError && <p className="text-sm text-destructive">{serverError}</p>}
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? "Logging in…" : "Log in"}
         </Button>
       </form>
 
-      <p className="mt-6 text-sm text-clay">
+      <p className="mt-6 text-sm text-muted-foreground">
         Leading an event for the first time?{" "}
-        <Link href="/register" className="text-safelight hover:underline">
+        <Link href="/register" className="text-primary hover:underline">
           Register as admin
         </Link>
       </p>

@@ -5,7 +5,6 @@ const PhotoSchema = new mongoose.Schema(
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: "Event", required: true, index: true },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     filename: { type: String, required: true },
-    storageUrl: { type: String },
     gridfsId: { type: mongoose.Schema.Types.ObjectId },
     contentType: { type: String },
     fileSize: { type: Number },

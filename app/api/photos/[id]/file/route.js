@@ -9,6 +9,12 @@ import { getAuthUser, canAccessEventPhotos } from "@/lib/authHelper";
 // photo-displaying surface (admin review grid, team member's own uploads,
 // customer gallery) now points its <img> src at this route instead.
 //
+// GridFS is the only storage backend a Photo document can point at —
+// there's no local-disk fallback here. (An older revision of this route
+// redirected to `photo.storageUrl` for photos saved to public/uploads/,
+// but that path is ephemeral on serverless hosts like Vercel and doesn't
+// survive a deploy, so it was removed rather than kept as a fallback.)
+//
 // Three separate audiences load images through here, and only one of them
 // has a session cookie:
 //   1. The owning admin, reviewing all photos on their event.
@@ -37,7 +43,7 @@ export async function GET(req, { params }) {
       return NextResponse.json({ success: false, message: "Photo not found." }, { status: 404 });
     }
 
-    const publiclyVisible = event.galleryPublished && photo.selectedForGallery;
+    const publiclyVisible = event.galleryPublished && (photo.selectedForGallery || photo.publishedForGallery);
     if (!publiclyVisible) {
       const user = await getAuthUser();
       if (!user || !canAccessEventPhotos(event, user)) {
@@ -46,10 +52,6 @@ export async function GET(req, { params }) {
           { status: 403 }
         );
       }
-    }
-
-    if (photo.storageUrl) {
-      return NextResponse.redirect(new URL(photo.storageUrl, req.url));
     }
 
     if (photo.gridfsId) {
@@ -70,12 +72,43 @@ export async function GET(req, { params }) {
       return new Response(body, {
         status: 200,
         headers: {
-          "Content-Type": photo.contentType || "application/octet-stream",
+          "Content-Type": photo.contentType || "image/jpeg",
           "Cache-Control": publiclyVisible
             ? "public, max-age=31536000, immutable"
             : "private, no-store",
         },
       });
+    }
+
+    // Fallback for legacy photos storing storageUrl / url / secure_url
+    const fallbackUrl = photo.storageUrl || photo.url || photo.secure_url;
+    if (fallbackUrl) {
+      if (fallbackUrl.startsWith("/uploads/")) {
+        const fs = await import("fs");
+        const path = await import("path");
+        const filePath = path.join(process.cwd(), "public", fallbackUrl);
+        if (fs.existsSync(filePath)) {
+          const fileBuffer = fs.readFileSync(filePath);
+          const ext = path.extname(filePath).toLowerCase();
+          const mimeTypes = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".webp": "image/webp",
+            ".gif": "image/gif",
+          };
+          return new Response(fileBuffer, {
+            status: 200,
+            headers: {
+              "Content-Type": mimeTypes[ext] || "image/jpeg",
+              "Cache-Control": publiclyVisible
+                ? "public, max-age=31536000, immutable"
+                : "private, no-store",
+            },
+          });
+        }
+      }
+      return NextResponse.redirect(new URL(fallbackUrl, req.url));
     }
 
     return NextResponse.json({ success: false, message: "Photo file not found." }, { status: 404 });

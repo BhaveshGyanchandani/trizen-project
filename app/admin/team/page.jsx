@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { Key, Camera } from "lucide-react";
 import { teamMembersAPI } from "@/lib/api";
 import { idOf } from "@/lib/idOf";
 import { useToast } from "@/lib/useToast";
@@ -11,9 +12,15 @@ import Modal from "@/components/Modal";
 import EmptyState from "@/components/EmptyState";
 import Loader from "@/components/Loader";
 import Topbar from "@/components/Topbar";
+import { Card } from "@/components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 function randomPassword() {
   return Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4);
+}
+
+function initials(name = "") {
+  return name.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
 }
 
 export default function TeamPage() {
@@ -39,12 +46,12 @@ export default function TeamPage() {
 
   return (
     <div>
-      <Topbar eyebrow="STUDIO CONSOLE" title="Team & Accounts">
+      <Topbar eyebrow="Studio console" title="Team & accounts">
         <Button onClick={() => setModalOpen(true)}>+ Add team member / admin</Button>
       </Topbar>
 
-      <div className="px-8 py-7">
-        <p className="mb-5 text-sm text-ash">
+      <div className="px-5 py-7 sm:px-8">
+        <p className="mb-5 text-sm text-muted-foreground">
           People in your studio. Team members can upload photos to assigned events; admins have full management access.
         </p>
 
@@ -61,55 +68,44 @@ export default function TeamPage() {
           />
         )}
         {members && members.length > 0 && (
-          <div className="overflow-hidden rounded-[var(--radius-proof)] border border-line bg-ink-soft">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="border-b border-line px-3.5 pb-2.5 pt-3.5 text-left font-mono text-[10.5px] tracking-wide text-ash-dim">
-                    NAME
-                  </th>
-                  <th className="border-b border-line px-3.5 pb-2.5 pt-3.5 text-left font-mono text-[10.5px] tracking-wide text-ash-dim">
-                    ROLE
-                  </th>
-                  <th className="border-b border-line px-3.5 pb-2.5 pt-3.5 text-left font-mono text-[10.5px] tracking-wide text-ash-dim">
-                    EMAIL
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="py-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Email</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {members.map((member) => (
-                  <tr key={idOf(member)} className="transition-colors hover:bg-ink-raised">
-                    <td className="border-b border-line-soft px-3.5 py-3 text-[13px] font-medium last:border-b-0">
+                  <TableRow key={idOf(member)}>
+                    <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-line bg-ink-raised font-mono text-[11.5px] text-bone">
-                          {member.name
-                            ?.split(/\s+/)
-                            .slice(0, 2)
-                            .map((p) => p[0]?.toUpperCase())
-                            .join("")}
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-[11px] font-medium">
+                          {initials(member.name)}
                         </span>
                         {member.name}
                       </div>
-                    </td>
-                    <td className="border-b border-line-soft px-3.5 py-3 text-[13px] last:border-b-0">
+                    </TableCell>
+                    <TableCell>
                       <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 font-mono text-[11px] ${
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs ${
                           member.role === "admin"
-                            ? "border border-safelight/40 bg-safelight-tint/20 text-safelight"
-                            : "border border-line bg-ink-raised text-ash"
+                            ? "border border-primary/30 bg-primary/10 text-primary"
+                            : "border border-border bg-muted text-muted-foreground"
                         }`}
                       >
-                        {member.role === "admin" ? "🔑 Admin" : "📷 Team Member"}
+                        {member.role === "admin" ? <Key className="size-3" /> : <Camera className="size-3" />}
+                        {member.role === "admin" ? "Admin" : "Team member"}
                       </span>
-                    </td>
-                    <td className="border-b border-line-soft px-3.5 py-3 text-[13px] text-ash last:border-b-0">
-                      {member.email}
-                    </td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{member.email}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         )}
       </div>
 
@@ -154,13 +150,13 @@ function AddTeamMemberModal({ open, onClose, onCreated }) {
     <Modal open={open} onClose={close} title={created ? "Account created" : "Add team member or admin"}>
       {created ? (
         <div className="space-y-4">
-          <p className="text-sm text-ash">
+          <p className="text-sm text-muted-foreground">
             Share these sign-in details with {created.name} — this password won&apos;t be shown again.
           </p>
-          <div className="rounded-[var(--radius-proof)] border border-line bg-ink-soft p-4 font-mono text-sm space-y-1">
+          <div className="space-y-1 rounded-lg border border-border bg-muted/50 p-4 text-sm">
             <p><strong>Role:</strong> {created.role === "admin" ? "Admin" : "Team Member"}</p>
             <p>{created.email}</p>
-            <p className="mt-1 text-safelight">{created.password}</p>
+            <p className="mt-1 text-primary">{created.password}</p>
           </div>
           <Button
             type="button"
@@ -182,29 +178,29 @@ function AddTeamMemberModal({ open, onClose, onCreated }) {
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="mb-1.5 block font-mono text-xs text-ash">Account Role</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Account role</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setRole("team_member")}
-                className={`rounded-[var(--radius-proof)] border px-3 py-2 text-xs font-mono transition-colors ${
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
                   role === "team_member"
-                    ? "border-safelight bg-safelight-tint/20 text-safelight font-semibold"
-                    : "border-line bg-ink-raised text-ash hover:border-ash"
+                    ? "border-primary bg-primary/10 font-medium text-primary"
+                    : "border-border bg-transparent text-muted-foreground hover:border-foreground/30"
                 }`}
               >
-                📷 Team Member
+                <Camera className="size-3.5" /> Team member
               </button>
               <button
                 type="button"
                 onClick={() => setRole("admin")}
-                className={`rounded-[var(--radius-proof)] border px-3 py-2 text-xs font-mono transition-colors ${
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
                   role === "admin"
-                    ? "border-safelight bg-safelight-tint/20 text-safelight font-semibold"
-                    : "border-line bg-ink-raised text-ash hover:border-ash"
+                    ? "border-primary bg-primary/10 font-medium text-primary"
+                    : "border-border bg-transparent text-muted-foreground hover:border-foreground/30"
                 }`}
               >
-                🔑 Admin
+                <Key className="size-3.5" /> Admin
               </button>
             </div>
           </div>
@@ -213,7 +209,7 @@ function AddTeamMemberModal({ open, onClose, onCreated }) {
             <input
               autoFocus
               {...register("name", { required: true })}
-              className={inputClass("ink", !!errors.name)}
+              className={inputClass(null, !!errors.name)}
               placeholder="Rohan Mehta"
             />
           </Field>
@@ -221,7 +217,7 @@ function AddTeamMemberModal({ open, onClose, onCreated }) {
             <input
               type="email"
               {...register("email", { required: true })}
-              className={inputClass("ink", !!errors.email)}
+              className={inputClass(null, !!errors.email)}
               placeholder="rohan@studio.com"
             />
           </Field>
@@ -229,7 +225,7 @@ function AddTeamMemberModal({ open, onClose, onCreated }) {
             <div className="flex gap-2">
               <input
                 {...register("password", { required: true, minLength: 8 })}
-                className={inputClass("ink", !!errors.password)}
+                className={inputClass(null, !!errors.password)}
                 placeholder="Set an initial password"
               />
               <Button

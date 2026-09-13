@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { Lock, Key, Camera, Check } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { authAPI, eventsAPI } from "@/lib/api";
 import { idOf } from "@/lib/idOf";
 import { useToast } from "@/lib/useToast";
 import Field, { inputClass } from "@/components/Field";
 import Button from "@/components/Button";
+import { Card, CardContent } from "@/components/ui/card";
 
 function randomPassword() {
   return Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4);
@@ -94,7 +96,7 @@ export default function RegisterPage() {
 
   if (regStatus.loading || status === "loading") {
     return (
-      <div className="py-12 text-center font-mono text-xs text-clay">
+      <div className="py-12 text-center text-xs text-muted-foreground">
         Checking system access permissions…
       </div>
     );
@@ -104,117 +106,121 @@ export default function RegisterPage() {
   const isAuthorizedAdmin = user?.role === "admin" || regStatus.isAdmin;
   if (!isAuthorizedAdmin && regStatus.adminExists) {
     return (
-      <div className="rounded-[var(--radius-proof)] border border-safelight/40 bg-safelight-tint/10 p-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-safelight/40 bg-safelight-tint/20 text-2xl">
-          🔒
-        </div>
-        <h1 className="font-display text-2xl">Admin Authorization Required</h1>
-        <p className="mt-2 text-sm text-clay leading-relaxed">
-          To create a new <strong>Admin</strong> or <strong>Team Member</strong> account, an existing Admin must first log in. Public registration is restricted.
-        </p>
-        <div className="mt-6 flex justify-center gap-3">
-          <Button as={Link} href="/login" className="px-6">
-            Log in as Admin
-          </Button>
-        </div>
-        <p className="mt-6 text-xs text-clay-dim">
-          Already have credentials? Log in with your Admin account to access account creation.
-        </p>
-      </div>
+      <Card className="border-destructive/30 bg-destructive/5">
+        <CardContent className="text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive">
+            <Lock className="size-5" />
+          </div>
+          <h1 className="text-xl font-semibold">Admin authorization required</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            To create a new <strong>Admin</strong> or <strong>Team Member</strong> account, an existing Admin must first log in. Public registration is restricted.
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <Button as={Link} href="/login" className="px-6">
+              Log in as Admin
+            </Button>
+          </div>
+          <p className="mt-6 text-xs text-muted-foreground">
+            Already have credentials? Log in with your Admin account to access account creation.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-3xl">
-          {isAuthorizedAdmin ? "Create New Account" : "Register as Admin"}
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {isAuthorizedAdmin ? "Create new account" : "Register as admin"}
         </h1>
         {isAuthorizedAdmin && (
-          <span className="rounded-full border border-safelight/40 bg-safelight-tint/20 px-3 py-1 font-mono text-[11px] text-safelight">
+          <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
             Logged in as Admin
           </span>
         )}
       </div>
 
-      <p className="mt-1 text-sm text-clay">
+      <p className="mt-1 text-sm text-muted-foreground">
         {isAuthorizedAdmin
           ? "Create a new Admin or Team Member account with their respective permissions."
-          : "Initial studio setup: Create the primary admin account for your studio."}
+          : "Initial studio setup: create the primary admin account for your studio."}
       </p>
 
       {createdUser ? (
-        <div className="mt-6 space-y-4 rounded-[var(--radius-proof)] border border-line bg-paper-dim p-5">
-          <div className="flex items-center gap-2 text-safelight font-medium text-sm">
-            <span>✓</span> Account created successfully
-          </div>
+        <Card className="mt-6">
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-success">
+              <Check className="size-4" /> Account created successfully
+            </div>
 
-          <div className="rounded-[var(--radius-proof)] border border-paper-line bg-paper p-4 font-mono text-sm space-y-1">
-            <p><strong>Role:</strong> {createdUser.role === "admin" ? "Admin" : "Team Member"}</p>
-            <p><strong>Name:</strong> {createdUser.name}</p>
-            <p><strong>Email:</strong> {createdUser.email}</p>
-            <p><strong>Password:</strong> <span className="text-safelight">{createdUser.password}</span></p>
-            {createdUser.role === "team_member" && (
-              <p className="text-xs text-clay mt-1">Assigned to {createdUser.eventCount} event(s)</p>
-            )}
-          </div>
+            <div className="space-y-1 rounded-lg border border-border bg-muted/50 p-4 text-sm">
+              <p><strong>Role:</strong> {createdUser.role === "admin" ? "Admin" : "Team Member"}</p>
+              <p><strong>Name:</strong> {createdUser.name}</p>
+              <p><strong>Email:</strong> {createdUser.email}</p>
+              <p><strong>Password:</strong> <span className="text-primary">{createdUser.password}</span></p>
+              {createdUser.role === "team_member" && (
+                <p className="mt-1 text-xs text-muted-foreground">Assigned to {createdUser.eventCount} event(s)</p>
+              )}
+            </div>
 
-          <p className="text-xs text-clay">
-            Share these credentials with the user. The password won&apos;t be displayed again.
-          </p>
+            <p className="text-xs text-muted-foreground">
+              Share these credentials with the user. The password won&apos;t be displayed again.
+            </p>
 
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button
-              type="button"
-              variant="secondary-paper"
-              onClick={() =>
-                navigator.clipboard
-                  .writeText(`${createdUser.email} / ${createdUser.password}`)
-                  .then(() => toast.show("Credentials copied."))
-              }
-            >
-              Copy Credentials
-            </Button>
-            <Button type="button" onClick={() => setCreatedUser(null)}>
-              Create Another Account
-            </Button>
-            <Button type="button" variant="secondary-paper" onClick={() => router.push("/admin")}>
-              Go to Dashboard
-            </Button>
-          </div>
-        </div>
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  navigator.clipboard
+                    .writeText(`${createdUser.email} / ${createdUser.password}`)
+                    .then(() => toast.show("Credentials copied."))
+                }
+              >
+                Copy credentials
+              </Button>
+              <Button type="button" onClick={() => setCreatedUser(null)}>
+                Create another account
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => router.push("/admin")}>
+                Go to dashboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
           {isAuthorizedAdmin && (
             <div>
-              <label className="mb-1.5 block font-mono text-xs font-medium text-clay">
-                ACCOUNT ROLE &amp; PERMISSIONS
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Account role &amp; permissions
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setRole("admin")}
-                  className={`rounded-[var(--radius-proof)] border px-4 py-2.5 text-xs font-mono transition-colors ${
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm transition-colors ${
                     role === "admin"
-                      ? "border-safelight bg-safelight-tint/20 text-safelight font-semibold"
-                      : "border-paper-line bg-paper-dim text-clay hover:border-clay"
+                      ? "border-primary bg-primary/10 font-medium text-primary"
+                      : "border-border bg-transparent text-muted-foreground hover:border-foreground/30"
                   }`}
                 >
-                  🔑 Admin Account
+                  <Key className="size-3.5" /> Admin account
                 </button>
                 <button
                   type="button"
                   onClick={() => setRole("team_member")}
-                  className={`rounded-[var(--radius-proof)] border px-4 py-2.5 text-xs font-mono transition-colors ${
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm transition-colors ${
                     role === "team_member"
-                      ? "border-safelight bg-safelight-tint/20 text-safelight font-semibold"
-                      : "border-paper-line bg-paper-dim text-clay hover:border-clay"
+                      ? "border-primary bg-primary/10 font-medium text-primary"
+                      : "border-border bg-transparent text-muted-foreground hover:border-foreground/30"
                   }`}
                 >
-                  📷 Team Member
+                  <Camera className="size-3.5" /> Team member
                 </button>
               </div>
-              <p className="mt-1.5 text-[11px] text-clay-dim">
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
                 {role === "admin"
                   ? "Admins can create events, manage team members, review & select photos, and publish galleries."
                   : "Team members can only view assigned events, view event photos, and upload new photos."}
@@ -222,34 +228,34 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <Field label="Name" tone="paper" error={errors.name && "Enter name."}>
+          <Field label="Name" error={errors.name && "Enter name."}>
             <input
               {...register("name", { required: true })}
-              className={inputClass("paper", !!errors.name)}
+              className={inputClass(null, !!errors.name)}
               placeholder="e.g. Rahul Verma"
             />
           </Field>
 
-          <Field label="Email" tone="paper" error={errors.email && "Enter valid email."}>
+          <Field label="Email" error={errors.email && "Enter valid email."}>
             <input
               type="email"
               {...register("email", { required: true })}
-              className={inputClass("paper", !!errors.email)}
+              className={inputClass(null, !!errors.email)}
               placeholder="rahul@studio.com"
             />
           </Field>
 
-          <Field label="Password" tone="paper" error={errors.password && "Use at least 8 characters."}>
+          <Field label="Password" error={errors.password && "Use at least 8 characters."}>
             <div className="flex gap-2">
               <input
                 {...register("password", { required: true, minLength: 8 })}
-                className={inputClass("paper", !!errors.password)}
+                className={inputClass(null, !!errors.password)}
                 placeholder="Set password"
               />
               {isAuthorizedAdmin && (
                 <Button
                   type="button"
-                  variant="secondary-paper"
+                  variant="secondary"
                   onClick={() => setValue("password", randomPassword(), { shouldValidate: true })}
                 >
                   Generate
@@ -260,15 +266,15 @@ export default function RegisterPage() {
 
           {isAuthorizedAdmin && role === "team_member" && events.length > 0 && (
             <div className="mt-4">
-              <label className="mb-1.5 block font-mono text-xs font-medium text-clay">
-                ASSIGN TO EXISTING EVENTS (OPTIONAL)
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Assign to existing events (optional)
               </label>
-              <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-[var(--radius-proof)] border border-paper-line bg-paper-dim p-3">
+              <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-border bg-muted/50 p-3">
                 {events.map((evt) => {
                   const id = idOf(evt);
                   const isChecked = selectedEventIds.includes(id);
                   return (
-                    <label key={id} className="flex items-center gap-2.5 text-xs text-plate cursor-pointer">
+                    <label key={id} className="flex cursor-pointer items-center gap-2.5 text-sm">
                       <input
                         type="checkbox"
                         checked={isChecked}
@@ -276,7 +282,7 @@ export default function RegisterPage() {
                           if (e.target.checked) setSelectedEventIds([...selectedEventIds, id]);
                           else setSelectedEventIds(selectedEventIds.filter((item) => item !== id));
                         }}
-                        className="accent-safelight h-4 w-4"
+                        className="h-4 w-4 accent-primary"
                       />
                       <span>{evt.name}</span>
                     </label>
@@ -286,24 +292,24 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {serverError && <p className="text-sm text-safelight">{serverError}</p>}
+          {serverError && <p className="text-sm text-destructive">{serverError}</p>}
 
           <Button type="submit" disabled={isSubmitting} className="w-full">
             {isSubmitting
               ? "Creating account…"
               : isAuthorizedAdmin
               ? role === "admin"
-                ? "Create Admin Account"
-                : "Create Team Member Account"
-              : "Create Initial Admin Account"}
+                ? "Create admin account"
+                : "Create team member account"
+              : "Create initial admin account"}
           </Button>
         </form>
       )}
 
       {!isAuthorizedAdmin && (
-        <p className="mt-6 text-sm text-clay">
+        <p className="mt-6 text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="text-safelight hover:underline">
+          <Link href="/login" className="text-primary hover:underline">
             Log in
           </Link>
         </p>

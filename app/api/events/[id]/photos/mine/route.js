@@ -31,7 +31,7 @@ export async function GET(req, { params }) {
       data: photos.map((p) => ({
         id: p._id,
         filename: p.filename,
-        storageUrl: p.storageUrl || `/api/photos/${p._id}/file`,
+        storageUrl: `/api/photos/${p._id}/file`,
         fileSize: p.fileSize,
         selectedForGallery: p.selectedForGallery,
         eventId: p.eventId,
