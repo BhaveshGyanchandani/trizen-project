@@ -129,7 +129,7 @@ export default function PhotoGrid({
               <span className="pointer-events-none absolute inset-0 rounded-lg border-2 border-primary" />
             )}
 
-            {(actions || (actionLabel ? [{ label: actionLabel, onClick: onAction }] : [])).length > 0 && !locked && (
+            {(actions || (actionLabel ? [{ label: actionLabel, onClick: onAction }] : [])).length > 0 && (
               <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
                 {(actions || [{ label: actionLabel, onClick: onAction }]).map((action) => (
                   <button
@@ -139,7 +139,9 @@ export default function PhotoGrid({
                       event.stopPropagation();
                       action.onClick?.(photo);
                     }}
-                    className="rounded-md bg-background/95 px-2 py-1 text-[11px] font-medium text-foreground shadow-sm hover:bg-background"
+                    className={`rounded-md bg-background/95 px-2 py-1 text-[11px] font-medium shadow-sm hover:bg-background ${
+                      action.variant === "danger" ? "text-destructive" : "text-foreground"
+                    }`}
                   >
                     {action.label}
                   </button>

@@ -46,6 +46,8 @@ export default function AdminEventDetail({ params }) {
   const [pinResult, setPinResult] = useState(null); // { pin } from regenerate, shown once
   const [notFound, setNotFound] = useState(false);
   const [togglingIds, setTogglingIds] = useState(() => new Set());
+  const [photoToDelete, setPhotoToDelete] = useState(null);
+  const [deletingPhotoId, setDeletingPhotoId] = useState(null);
   const [updatingAssignmentIds, setUpdatingAssignmentIds] = useState(() => new Set());
   const [editOpen, setEditOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
@@ -206,6 +208,22 @@ export default function AdminEventDetail({ params }) {
         next.delete(photoId);
         return next;
       });
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!photoToDelete) return;
+    const photoId = idOf(photoToDelete);
+    setDeletingPhotoId(photoId);
+    try {
+      await photosAPI.remove(photoId);
+      setPhotoToDelete(null);
+      toast.success("Photo permanently deleted.");
+      await Promise.all([load(), loadRequests(), loadFeedback()]);
+    } catch (err) {
+      toast.error(err.message || "Couldn't delete the photo.");
+    } finally {
+      setDeletingPhotoId(null);
     }
   };
 
@@ -441,7 +459,13 @@ export default function AdminEventDetail({ params }) {
                 disappears from under them. Unpublish the gallery to make changes.
               </p>
               <div className="mt-4">
-                <PhotoGrid photos={publishedPhotos} locked showDetails feedbackByPhoto={feedbackByPhoto} />
+                <PhotoGrid
+                  photos={publishedPhotos}
+                  locked
+                  showDetails
+                  feedbackByPhoto={feedbackByPhoto}
+                  actions={[{ label: "Delete", onClick: setPhotoToDelete, variant: "danger" }]}
+                />
               </div>
             </section>
           )}
@@ -476,6 +500,7 @@ export default function AdminEventDetail({ params }) {
                   pendingIds={togglingIds}
                   showDetails
                   feedbackByPhoto={feedbackByPhoto}
+                  actions={[{ label: "Delete", onClick: setPhotoToDelete, variant: "danger" }]}
                 />
               )}
             </div>
@@ -525,6 +550,24 @@ export default function AdminEventDetail({ params }) {
 
       <PublishRevealModal result={publishResult} onClose={() => setPublishResult(null)} />
       <PinRevealModal result={pinResult} onClose={() => setPinResult(null)} />
+      <Modal
+        open={!!photoToDelete}
+        onClose={() => !deletingPhotoId && setPhotoToDelete(null)}
+        title="Delete photo permanently"
+      >
+        <p className="text-sm text-muted-foreground">
+          Delete “{photoToDelete?.filename || "this photo"}” from the database? Its image file,
+          customer ratings, and change requests will be permanently removed.
+        </p>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setPhotoToDelete(null)} disabled={!!deletingPhotoId}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeletePhoto} disabled={!!deletingPhotoId}>
+            {deletingPhotoId ? "Deleting…" : "Delete permanently"}
+          </Button>
+        </div>
+      </Modal>
       <EditEventModal
         open={editOpen}
         event={event}
