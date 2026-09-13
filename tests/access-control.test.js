@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   canAccessEventPhotos,
+  canManageTeamMember,
   canReadPhoto,
   isAssignedToEvent,
   isEventOwner,
@@ -28,4 +29,10 @@ test("team members can view only their own uploads or already-published photos",
   assert.equal(canReadPhoto({ event, photo: { uploadedBy: "team-2" }, user: assignedMember }), false);
   assert.equal(canReadPhoto({ event, photo: { uploadedBy: "team-2" }, user: assignedMember, isPublished: true }), true);
   assert.equal(canReadPhoto({ event, photo, user: null, hasGalleryAccess: true }), true);
+});
+
+test("an admin can permanently remove only team members created in their own studio", () => {
+  assert.equal(canManageTeamMember(owner, { role: "team_member", createdBy: "admin-1" }), true);
+  assert.equal(canManageTeamMember(owner, { role: "team_member", createdBy: "admin-2" }), false);
+  assert.equal(canManageTeamMember(owner, { role: "admin", createdBy: "admin-1" }), false);
 });

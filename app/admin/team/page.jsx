@@ -26,6 +26,8 @@ function initials(name = "") {
 export default function TeamPage() {
   const [members, setMembers] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
+  const [deletingMemberId, setDeletingMemberId] = useState(null);
   const toast = useToast();
 
   const load = async () => {
@@ -43,6 +45,22 @@ export default function TeamPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const deleteMember = async () => {
+    if (!memberToDelete) return;
+    const memberId = idOf(memberToDelete);
+    setDeletingMemberId(memberId);
+    try {
+      await teamMembersAPI.remove(memberId);
+      setMembers((current) => current.filter((member) => idOf(member) !== memberId));
+      setMemberToDelete(null);
+      toast.success(`${memberToDelete.name} was removed from your team.`);
+    } catch (error) {
+      toast.error(error.message || "Couldn't remove the team member.");
+    } finally {
+      setDeletingMemberId(null);
+    }
+  };
 
   return (
     <div>
@@ -75,6 +93,7 @@ export default function TeamPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -101,6 +120,15 @@ export default function TeamPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{member.email}</TableCell>
+                    <TableCell className="text-right">
+                      {member.role === "team_member" ? (
+                        <Button variant="danger" className="h-8 px-2.5 text-xs" onClick={() => setMemberToDelete(member)}>
+                          Remove
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Admin account</span>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -116,6 +144,24 @@ export default function TeamPage() {
           setMembers((prev) => [member, ...(prev || [])]);
         }}
       />
+      <Modal
+        open={!!memberToDelete}
+        onClose={() => !deletingMemberId && setMemberToDelete(null)}
+        title="Remove team member"
+      >
+        <p className="text-sm text-muted-foreground">
+          Remove {memberToDelete?.name || "this team member"} completely from your studio? They will lose
+          sign-in access and be unassigned from all of your events. Their uploaded photos will remain in those events.
+        </p>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setMemberToDelete(null)} disabled={!!deletingMemberId}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={deleteMember} disabled={!!deletingMemberId}>
+            {deletingMemberId ? "Removing…" : "Remove permanently"}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
