@@ -5,6 +5,8 @@ a photo-sharing platform. One Next.js app serves both the UI (App Router
 pages) and the API (`app/api/*` route handlers), backed by MongoDB via
 Mongoose. Same-origin by design, so there's no CORS to configure.
 
+**Live application:** https://trizen-project-beta.vercel.app
+
 ## Setup
 
 ```bash
@@ -32,15 +34,13 @@ After `npm run seed` (safe to re-run — everything is upserted):
 
 The seed also creates one event ("Arjun & Priya Wedding" — the PDF's own
 example) with 3 generated sample photos already uploaded and selected, and
-publishes its gallery at:
-
-- **Local link**: `http://localhost:5000/gallery/abc123`
-- **Deployed link**: `https://trizen-project-beta.vercel.app/gallery/abc123`
-- **PIN**: `482917`
-
-(Both values are the exact example ones from section 5 of the challenge
-PDF.) Log in as the team member to upload more photos, or the admin to
-select/publish — the seed just gets you a working starting point.
+publishes its gallery. The gallery link and PIN are generated at publish
+time and shown once in the admin UI (Event → Gallery) — they're
+intentionally not hardcoded here, since regenerating the PIN from the admin
+console immediately invalidates whatever value was last written down. Log
+in as the admin at the live link above to see the current link and PIN, or
+as the team member to upload more photos — the seed just gets you a
+working starting point.
 
 ## Architecture
 
@@ -164,6 +164,8 @@ the gallery PIN rate limiter's allow/deny/reset behavior. Route handlers
 apply these same policies before database or storage operations.
 
 ## Deployment (Vercel)
+
+Currently deployed at https://trizen-project-beta.vercel.app.
 
 1. Import the Git repository into Vercel and deploy it as a Next.js project.
 2. Add `MONGODB_URL`, `JWT_SECRET`, `CLOUDINARY_CLOUD_NAME`,
