@@ -1,0 +1,77 @@
+%% Trizen Photo Ops — Detailed Architecture
+%% Paste this block into any Markdown file inside a ```mermaid fence,
+%% or import directly at https://mermaid.live
+
+flowchart TD
+    subgraph CLIENT["Client Layer — Browser (Next.js App Router pages)"]
+        direction TB
+        AuthUI["Auth Pages<br/>/login  /register"]
+        AdminUI["Admin Pages<br/>/admin/events  /admin/team  /admin/profile"]
+        TeamUI["Team Pages<br/>/team/events  /team/profile"]
+        GalleryUI["Public Gallery<br/>/gallery/[slug]  (PIN-gated)"]
+        ProfileUI["Shared Profile Page<br/>/profile"]
+    end
+
+    subgraph API["API Layer — app/api/* Route Handlers"]
+        direction TB
+        AuthAPI["/api/auth/*<br/>register · login · logout · me · profile · avatar"]
+        TeamAPI["/api/team-members/*"]
+        EventAPI["/api/events/*<br/>[id] · team-members · photos · gallery"]
+        PhotoAPI["/api/photos/*<br/>[id]/select · [id]/file"]
+        RequestAPI["/api/photo-requests/*"]
+        GalleryAPI["/api/gallery/[slug]<br/>public metadata + PIN verification"]
+    end
+
+    subgraph LIB["Shared Logic — lib/"]
+        direction TB
+        JWT["jwtAuth.js + authHelper.js<br/>verify JWT from httpOnly cookie"]
+        ACCESS["accessControl.js<br/>event ownership / assignment checks"]
+        RATE["rateLimit.js<br/>PIN brute-force protection"]
+        POLICY["galleryPolicy.js + galleryPublish.js<br/>publish rules, PIN bcrypt-hash"]
+        VALID["imageValidation.js + requestValidation.js"]
+        STORE["storage.js<br/>Cloudinary upload + signed URL"]
+        SER["serializers.js"]
+    end
+
+    subgraph DATA["Data Layer"]
+        direction TB
+        MONGOCONN["mongodb.js<br/>Mongoose connectDB() (cached connection)"]
+        MODELS["Models<br/>User · Event · Photo ·<br/>CustomerPhotoFeedback · PhotoChangeRequest"]
+    end
+
+    MONGO[("MongoDB<br/>users · events · photos ·<br/>customerphotofeedbacks · photochangerequests")]
+    CLOUD[("Cloudinary<br/>authenticated image bytes<br/>(GridFS = legacy fallback only)")]
+
+    %% Client -> API
+    AuthUI --> AuthAPI
+    ProfileUI --> AuthAPI
+    AdminUI --> EventAPI
+    AdminUI --> TeamAPI
+    AdminUI --> PhotoAPI
+    TeamUI --> EventAPI
+    TeamUI --> PhotoAPI
+    GalleryUI --> GalleryAPI
+
+    %% API -> shared logic
+    AuthAPI --> JWT
+    EventAPI --> JWT
+    EventAPI --> ACCESS
+    TeamAPI --> ACCESS
+    PhotoAPI --> ACCESS
+    PhotoAPI --> VALID
+    PhotoAPI --> STORE
+    RequestAPI --> VALID
+    RequestAPI --> ACCESS
+    GalleryAPI --> RATE
+    GalleryAPI --> POLICY
+
+    %% shared logic -> data / storage
+    JWT --> SER
+    ACCESS --> MONGOCONN
+    POLICY --> MONGOCONN
+    RATE --> MONGOCONN
+    VALID --> MONGOCONN
+    STORE --> CLOUD
+
+    MONGOCONN --> MODELS
+    MODELS --> MONGO

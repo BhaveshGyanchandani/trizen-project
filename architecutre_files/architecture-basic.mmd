@@ -1,0 +1,17 @@
+%% Trizen Photo Ops — Basic Architecture
+%% Paste this block into any Markdown file inside a ```mermaid fence,
+%% or import directly at https://mermaid.live
+
+flowchart LR
+    Client["Browser<br/>Admin / Team / Customer"]
+
+    subgraph Vercel["Vercel (Hosting)"]
+        App["Next.js App<br/>UI Pages + API Route Handlers<br/>(same-origin, no CORS)"]
+    end
+
+    Mongo[("MongoDB<br/>Users · Events · Photo metadata")]
+    Cloud[("Cloudinary<br/>Image Storage (CDN)")]
+
+    Client -->|HTTPS| App
+    App -->|Mongoose driver| Mongo
+    App -->|Upload / signed fetch| Cloud
