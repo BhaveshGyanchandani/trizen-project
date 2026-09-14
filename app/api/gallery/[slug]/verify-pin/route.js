@@ -5,8 +5,14 @@ import Event from "@/models/Event";
 import Photo from "@/models/Photo";
 import { createGalleryAccessToken, galleryCookieName, getGalleryAccess } from "@/lib/authHelper";
 import { isValidGalleryPin } from "@/lib/galleryPolicy";
+import { checkRateLimit, clientIpFromRequest } from "@/lib/rateLimit";
 import { randomUUID } from "crypto";
 
+// A 6-digit PIN only has 1,000,000 combinations, so this endpoint is the one
+// place in the app an attacker could plausibly brute-force without ever
+// having a real account. Throttle by slug+IP: a wrong guess still counts
+// against the limit (bad PINs are exactly what we're rate-limiting), a
+// correct guess does not need to since it already ends the attack.
 export async function POST(req, { params }) {
   try {
     const { slug } = await params;
@@ -14,6 +20,16 @@ export async function POST(req, { params }) {
 
     if (!isValidGalleryPin(pin)) {
       return NextResponse.json({ success: false, message: "Enter the 6-digit PIN." }, { status: 400 });
+    }
+
+    const rateLimitKey = `${slug}:${clientIpFromRequest(req)}`;
+    const { allowed, retryAfterMs } = checkRateLimit(rateLimitKey, { max: 8, windowMs: 10 * 60 * 1000 });
+    if (!allowed) {
+      const retryAfterSeconds = Math.ceil(retryAfterMs / 1000);
+      return NextResponse.json(
+        { success: false, message: "Too many attempts. Please wait a few minutes and try again." },
+        { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
+      );
     }
 
     await connectDB();

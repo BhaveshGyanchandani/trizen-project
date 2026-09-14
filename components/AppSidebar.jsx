@@ -89,12 +89,17 @@ export default function AppSidebar() {
 
       <SidebarFooter>
         <SidebarSeparator className="mb-2" />
-        <button
-          onClick={handleLogout}
+        <Link
+          href="/profile"
           className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-sidebar-accent"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-background text-xs font-medium">
-            {initials(user.name)}
+          <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background text-xs font-medium">
+            {user.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset
+              <img src={user.avatarUrl} alt="" className="size-full object-cover" />
+            ) : (
+              initials(user.name)
+            )}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm">{user.name}</span>
@@ -102,7 +107,13 @@ export default function AppSidebar() {
               {isAdmin ? "Admin" : "Team member"}
             </span>
           </span>
-          <LogOut className="size-3.5 shrink-0 text-muted-foreground" />
+        </Link>
+        <button
+          onClick={handleLogout}
+          className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-sidebar-accent"
+        >
+          <LogOut className="size-3.5 shrink-0" />
+          Log out
         </button>
       </SidebarFooter>
     </Sidebar>

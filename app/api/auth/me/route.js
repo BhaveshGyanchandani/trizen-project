@@ -18,6 +18,9 @@ export async function GET() {
         name: user.name,
         email: user.email,
         role: user.role,
+        phone: user.phone || "",
+        bio: user.bio || "",
+        avatarUrl: user.avatarCloudinaryPublicId ? `/api/auth/avatar/${user._id}` : null,
       },
     });
   } catch (error) {

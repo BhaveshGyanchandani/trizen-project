@@ -48,16 +48,32 @@ select/publish — the seed just gets you a working starting point.
 app/
 ├── api/                    — backend route handlers
 │   ├── auth/                 register, login, logout, me (JWT in an httpOnly cookie)
+│   │   ├── profile             self-service: either role views/edits their own name,
+│   │   │                       email, phone, bio, and password
+│   │   └── avatar, avatar/[userId]  self-service avatar upload/remove; any
+│   │                             authenticated user can view another's avatar
 │   ├── team-members/         admin adds/lists their team
 │   ├── events/                create/list events; [id] for detail, team-members, photos, gallery
 │   ├── photos/[id]/select     admin toggles a photo's gallery selection
 │   └── gallery/[slug]         public metadata + PIN verification, no auth
-├── (auth)/, admin/, team/, gallery/  — the frontend pages
+├── (auth)/, admin/, team/, gallery/, profile/  — the frontend pages
 components/, lib/            — shared UI + the API client (lib/api.js), auth
                                 context, and DB/storage helpers
 models/                       — Mongoose schemas: User, Event, Photo
-scripts/seed.js               — standalone demo-data script (see above)
+scripts/seed.cjs               — standalone demo-data script (see above)
 ```
+
+### Profile management
+
+Both roles can edit their own account from `/profile` (linked from the
+sidebar) — name, email, phone, bio, password, and an avatar photo. It's one
+shared page and one shared API surface (`/api/auth/profile`,
+`/api/auth/avatar`) because the rules are identical for admins and team
+members: every route reads the target user from the auth cookie itself, so
+there's no `userId` anywhere in the request that could let one account edit
+another's. Password changes require the current password. Avatar bytes go
+through the same Cloudinary path as event photos — never stored in MongoDB —
+and the previous avatar is deleted from Cloudinary when a new one is set.
 
 Auth is a JWT in an httpOnly cookie set by `/api/auth/login`; every
 protected route reads it via `getAuthUser()` in `lib/authHelper.js`.
@@ -77,7 +93,7 @@ Admin/team/gallery PIN checks -> /api/photos/:id/file -> signed Cloudinary asset
 
 | Collection | Purpose | Key relationships |
 |---|---|---|
-| `users` | Admin and team-member accounts | Team members record their creating admin. |
+| `users` | Admin and team-member accounts, plus optional self-service profile fields (phone, bio) and avatar Cloudinary identifiers | Team members record their creating admin. |
 | `events` | Event owner, assigned team, gallery status/link/PIN hash, optional cover metadata | Owned by one admin; contains team references. |
 | `photos` | Filename, file size, Cloudinary asset identifiers, selection state, uploader, and event reference | One photo belongs to one event and uploader. Image bytes stay in Cloudinary. |
 | `customerphotofeedbacks` | One customer-session rating/comment per photo | Unique `photoId + customerSessionId`. |
@@ -105,7 +121,7 @@ gallery state). The existing `GET /api/photos/[id]/file` route still enforces
 admin/team/gallery-PIN access, then proxies a server-generated signed
 Cloudinary URL so the signed URL is never exposed in page markup.
 
-`scripts/migrate-gridfs-to-cloudinary.js` safely copies legacy GridFS files
+`scripts/migrate-gridfs-to-cloudinary.cjs` safely copies legacy GridFS files
 to Cloudinary and updates their existing MongoDB records in place. GridFS is
 read only as a temporary fallback until the explicit purge command succeeds.
 
@@ -126,6 +142,14 @@ read only as a temporary fallback until the explicit purge command succeeds.
   not just via the disabled button in the UI).
 - Cloudinary credentials remain server-only; authenticated Cloudinary assets
   require a signed delivery URL and are fetched only after app authorization.
+- `JWT_SECRET` has no fallback value — the app throws on startup if it's
+  missing, rather than silently signing tokens with a guessable default.
+- Gallery PIN verification is rate-limited per gallery+IP (`lib/rateLimit.js`)
+  to slow down brute-forcing a 6-digit PIN; wrong guesses count against the
+  limit, a correct one doesn't need to.
+- `/api/auth/profile` and `/api/auth/avatar` always act on the caller's own
+  account — the target user comes from the auth cookie, never from a body or
+  URL param — so there's no way for one account to edit another's profile.
 
 ## Testing
 
@@ -134,9 +158,10 @@ npm test
 ```
 
 The built-in Node test suite covers event ownership/assignment authorization,
-team-member photo visibility, PIN format validation, and the gallery-publish
-policy. Route handlers apply these same policies before database or storage
-operations.
+team-member photo visibility, PIN format validation, the gallery-publish
+policy, profile-update validation (name/email/phone/bio/password rules), and
+the gallery PIN rate limiter's allow/deny/reset behavior. Route handlers
+apply these same policies before database or storage operations.
 
 ## Deployment (Vercel)
 
