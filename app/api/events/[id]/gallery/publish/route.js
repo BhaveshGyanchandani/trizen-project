@@ -6,10 +6,18 @@ import Photo from "@/models/Photo";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 import { canPublishGallery } from "@/lib/galleryPolicy";
 
+/**
+ * NOTE: a local duplicate of the same-named helper in lib/galleryPublish.js.
+ * Generates a random 6-digit numeric PIN.
+ */
 function generatePin() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+/**
+ * NOTE: a local duplicate of the same-named helper in lib/galleryPublish.js.
+ * Builds a URL-safe gallery slug from the event name with a random suffix.
+ */
 function generateSlug(name) {
   const base = name
     .toLowerCase()
@@ -19,6 +27,21 @@ function generateSlug(name) {
   return `${base || "gallery"}-${suffix}`;
 }
 
+/**
+ * POST /api/events/[id]/gallery/publish
+ *
+ * Publishes (or republishes) the event's gallery. Requires at least one
+ * photo currently selected for the gallery (see `canPublishGallery`).
+ * Assigns a stable slug on first publish (retried on rare collisions)
+ * and generates a PIN only on first publish — republishes intentionally
+ * reuse the existing PIN so a previously shared link/PIN keeps working.
+ * Every currently-selected, non-excluded photo is marked
+ * `publishedForGallery: true` so the admin UI can treat it as live.
+ *
+ * Response: { status, slug, url, pin, isFirstPublish } — `pin` is only
+ * non-null on first publish, since it can never be retrieved again
+ * after that (see /gallery/regenerate-pin to issue a new one).
+ */
 export async function POST(req, { params }) {
   try {
     const user = await getAuthUser();

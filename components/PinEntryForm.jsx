@@ -5,6 +5,12 @@ import { useForm } from "react-hook-form";
 import Button from "./Button";
 import { inputClass } from "./Field";
 
+/**
+ * 6-digit PIN entry form for the public gallery landing page. Validates
+ * the format client-side, calls `onSubmit(pin)` (expected to verify the
+ * PIN with the server and throw on failure), and surfaces either the
+ * client-side format error or the server's rejection message.
+ */
 export default function PinEntryForm({ onSubmit }) {
   const [serverError, setServerError] = useState("");
   const {

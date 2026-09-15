@@ -19,6 +19,7 @@ import Topbar from "@/components/Topbar";
 import Field, { inputClass } from "@/components/Field";
 import { Card, CardContent } from "@/components/ui/card";
 
+/** Normalizes the gallery-status API response into a consistent `{ status, slug }` shape across endpoint response variations. */
 function normalizeGallery(data) {
   if (!data) return { status: "draft" };
   const g = data.gallery || data;
@@ -28,10 +29,20 @@ function normalizeGallery(data) {
   };
 }
 
+/** Builds the fetchable image URL for a photo. */
 function photoSrc(photo) {
   return `/api/photos/${idOf(photo)}/file`;
 }
 
+/**
+ * Admin event detail page ("/admin/events/[id]"). The main workspace
+ * for running a single event: team assignment, photo review/selection,
+ * gallery publish/unpublish/PIN management, customer removal-request
+ * review, and per-photo customer feedback. Loads its several data
+ * sources (event, team roster, photos, gallery status, requests,
+ * feedback) independently so one slow/failing source doesn't block the
+ * rest of the page.
+ */
 export default function AdminEventDetail({ params }) {
   const { id } = use(params);
   const toast = useToast();
@@ -60,6 +71,7 @@ export default function AdminEventDetail({ params }) {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
 
+  /** Fetches the event, the admin's full team roster, and the (filtered) photo list; then separately fetches gallery status. */
   const load = async () => {
     setPhotoLoading(true);
     try {
@@ -86,6 +98,7 @@ export default function AdminEventDetail({ params }) {
     }
   };
 
+  /** Fetches all customer photo-removal requests for this event. */
   const loadRequests = async () => {
     setRequestsLoading(true);
     try {
@@ -99,6 +112,7 @@ export default function AdminEventDetail({ params }) {
     }
   };
 
+  /** Fetches all customer star ratings/comments for this event's photos. */
   const loadFeedback = async () => {
     try {
       const data = await photoFeedbackAPI.listForEvent(id);
@@ -156,6 +170,7 @@ export default function AdminEventDetail({ params }) {
   // checkbox selection until the next full reload.
   const totalReadyCount = publishedPhotos.length + selectedIds.size;
 
+  /** Assigns a team member to this event, with per-member in-flight tracking to prevent duplicate submissions. */
   const handleAssign = async (userId) => {
     if (updatingAssignmentIds.has(userId)) return;
     setUpdatingAssignmentIds((prev) => new Set(prev).add(userId));
@@ -176,6 +191,7 @@ export default function AdminEventDetail({ params }) {
     }
   };
 
+  /** Removes a team member's assignment from this event. */
   const handleUnassign = async (userId) => {
     if (updatingAssignmentIds.has(userId)) return;
     setUpdatingAssignmentIds((prev) => new Set(prev).add(userId));
@@ -194,6 +210,11 @@ export default function AdminEventDetail({ params }) {
     }
   };
 
+  /**
+   * Toggles a photo's gallery selection with an optimistic UI update,
+   * rolling back if the server rejects it (e.g. the photo became locked
+   * or excluded in the meantime).
+   */
   const handleTogglePhoto = async (photoId) => {
     // Ignore a second click on a photo whose request is still in flight —
     // this is what actually stops a rapid double-click from firing two
@@ -222,6 +243,7 @@ export default function AdminEventDetail({ params }) {
     }
   };
 
+  /** Permanently deletes the photo staged in `photoToDelete`, then reloads photos, requests, and feedback. */
   const handleDeletePhoto = async () => {
     if (!photoToDelete) return;
     const photoId = idOf(photoToDelete);
@@ -238,6 +260,7 @@ export default function AdminEventDetail({ params }) {
     }
   };
 
+  /** Approves or rejects a pending customer photo-removal request; reloads photos on approval since the photo becomes excluded. */
   const handleReviewRequest = async (requestId, status) => {
     setReviewingRequestId(requestId);
     try {
@@ -252,6 +275,12 @@ export default function AdminEventDetail({ params }) {
     }
   };
 
+  /**
+   * Publishes (or republishes) the gallery, then shows the resulting
+   * link/PIN in a one-time reveal modal. `pin` is only present on first
+   * publish; on republish the backend omits it since it isn't changing
+   * and can't be re-shown.
+   */
   const handlePublish = async () => {
     setPublishing(true);
     try {
@@ -275,6 +304,7 @@ export default function AdminEventDetail({ params }) {
     }
   };
 
+  /** Takes the gallery offline and clears the published-photo locks by reloading. */
   const handleUnpublish = async () => {
     try {
       await galleryAdminAPI.unpublish(id);
@@ -286,6 +316,7 @@ export default function AdminEventDetail({ params }) {
     }
   };
 
+  /** Issues a fresh gallery PIN and shows it in a one-time reveal modal. */
   const handleRegeneratePin = async () => {
     setRegenerating(true);
     try {
@@ -620,10 +651,20 @@ export default function AdminEventDetail({ params }) {
   );
 }
 
+/** Generates a short random password for the temporary-credentials convenience button. */
 function makeTemporaryPassword() {
   return Math.random().toString(36).slice(-5) + Math.random().toString(36).slice(-5);
 }
 
+/**
+ * Modal that creates a brand-new team-member account and immediately
+ * assigns them to this event in one step. `onCreated` performs both
+ * the account creation and the assignment call, returning either
+ * `{ member }` on full success or `{ member, assignmentError }` if the
+ * account was created but the assignment call failed — in which case
+ * this shows the credentials anyway (the account still exists) plus
+ * the error, so the admin can assign it manually later.
+ */
 function AddAndAssignMemberModal({ open, onClose, onCreated }) {
   const toast = useToast();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -631,6 +672,7 @@ function AddAndAssignMemberModal({ open, onClose, onCreated }) {
   const [saving, setSaving] = useState(false);
   const [created, setCreated] = useState(null);
 
+  /** Resets and closes the modal, ignored while a submission is in flight. */
   const close = () => {
     if (saving) return;
     setForm({ name: "", email: "", password: "" });
@@ -639,6 +681,7 @@ function AddAndAssignMemberModal({ open, onClose, onCreated }) {
     onClose();
   };
 
+  /** Validates the form, then delegates to `onCreated` and shows the resulting credentials or error. */
   const submit = async (event) => {
     event.preventDefault();
     if (!form.name.trim() || !form.email.trim() || form.password.length < 8) {
@@ -698,6 +741,12 @@ function AddAndAssignMemberModal({ open, onClose, onCreated }) {
   );
 }
 
+/**
+ * Sidebar panel showing the gallery's current publish state and the
+ * relevant actions: "Publish gallery" when in draft (disabled until at
+ * least one photo is ready), or republish/regenerate-PIN/unpublish
+ * controls plus the live link when published.
+ */
 function GalleryStatusPanel({
   gallery,
   totalReadyCount,
@@ -744,6 +793,7 @@ function GalleryStatusPanel({
   );
 }
 
+/** Labeled value with a one-click "Copy" button, used for sharing gallery links and PINs. */
 function CopyRow({ label, value, mono }) {
   const toast = useToast();
   return (
@@ -767,6 +817,13 @@ function CopyRow({ label, value, mono }) {
   );
 }
 
+/**
+ * One-time reveal modal shown right after publishing. On first publish,
+ * shows both the gallery link and the PIN (which can never be shown
+ * again after this). On republish, PIN unchanged, nothing new to
+ * reveal — just confirm — so it only shows the link and a confirmation
+ * message.
+ */
 function PublishRevealModal({ result, onClose }) {
   if (result && !result.isFirstPublish) {
     // Republish: PIN unchanged, nothing new to reveal — just confirm.
@@ -803,6 +860,7 @@ function PublishRevealModal({ result, onClose }) {
   );
 }
 
+/** One-time reveal modal shown right after regenerating the gallery PIN. */
 function PinRevealModal({ result, onClose }) {
   return (
     <Modal open={!!result} onClose={onClose} title="PIN regenerated">
@@ -820,6 +878,7 @@ function PinRevealModal({ result, onClose }) {
   );
 }
 
+/** Modal for renaming the event and/or replacing its cover photo. */
 function EditEventModal({ open, event, onClose, onSaved }) {
   const toast = useToast();
   const [name, setName] = useState("");
@@ -842,6 +901,7 @@ function EditEventModal({ open, event, onClose, onSaved }) {
     }
   }, [open, event]);
 
+  /** Validates the chosen cover file is an image and stages a local preview. */
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -854,6 +914,7 @@ function EditEventModal({ open, event, onClose, onSaved }) {
     setPreviewUrl(URL.createObjectURL(file));
   };
 
+  /** Saves the edited name and/or new cover photo. */
   const handleSave = async () => {
     if (!name.trim()) {
       setError("Event name can't be empty.");

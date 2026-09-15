@@ -13,10 +13,24 @@ import Field, { inputClass } from "@/components/Field";
 import Button from "@/components/Button";
 import { Card, CardContent } from "@/components/ui/card";
 
+/** Generates a short random password for the "Generate" convenience button when an admin creates an account for someone else. */
 function randomPassword() {
   return Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4);
 }
 
+/**
+ * Registration page ("/register"). Serves three different flows behind
+ * one form, resolved from GET /api/auth/register on mount:
+ *
+ * 1. No admin exists yet — public first-run setup creates the initial
+ *    admin account and logs them straight into the dashboard.
+ * 2. An admin is logged in — they can create further admin or
+ *    team_member accounts, optionally assigning a new team member to
+ *    existing events, and are shown the generated credentials once
+ *    (never retrievable again after this).
+ * 3. Anyone else, once an admin exists — blocked by the registration
+ *    wall and prompted to log in as an admin instead.
+ */
 export default function RegisterPage() {
   const { user, status } = useAuth();
   const router = useRouter();

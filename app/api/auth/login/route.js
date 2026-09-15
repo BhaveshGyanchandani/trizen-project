@@ -4,6 +4,15 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { setAuthCookie } from "@/lib/authHelper";
 
+/**
+ * POST /api/auth/login
+ *
+ * Authenticates a user by email and password. On success, sets the
+ * httpOnly session cookie and returns the user's public profile fields.
+ *
+ * Body: { email, password }
+ * Response: { id, name, email, role }
+ */
 export async function POST(req) {
   try {
     await connectDB();

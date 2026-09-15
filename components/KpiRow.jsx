@@ -1,8 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 
-// A row of headline numbers for a dashboard home — real shadcn Cards in a
-// grid rather than a single bordered strip, so each figure reads as its own
-// unit of information.
+/**
+ * Row of headline KPI numbers for a dashboard home. Real shadcn Cards in
+ * a grid rather than a single bordered strip, so each figure reads as
+ * its own unit of information. Entries with an undefined/null `value`
+ * are skipped; renders nothing if none remain.
+ */
 export default function KpiRow({ stats }) {
   const visible = stats.filter((s) => s.value !== undefined && s.value !== null);
   if (visible.length === 0) return null;

@@ -1,3 +1,4 @@
+/** Text input primitive from shadcn/ui. */
 import { cn } from "@/lib/utils";
 
 export function Input({ className, type, ...props }) {

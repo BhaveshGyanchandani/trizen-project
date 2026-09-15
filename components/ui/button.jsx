@@ -1,3 +1,4 @@
+/** Button primitive from shadcn/ui — style variants only, no custom behavior. */
 import { cva } from "class-variance-authority";
 import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";

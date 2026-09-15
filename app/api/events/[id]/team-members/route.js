@@ -4,6 +4,17 @@ import Event from "@/models/Event";
 import User from "@/models/User";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 
+/**
+ * POST /api/events/[id]/team-members
+ *
+ * Assigns a team member to an event. Admin only, and restricted to
+ * team members this admin actually created — prevents assigning an
+ * arbitrary account (or another admin's roster) to the event.
+ * Idempotent: assigning an already-assigned member is a no-op.
+ *
+ * Body: { userId }
+ * Response: the event's id, name, and updated team member list.
+ */
 export async function POST(req, { params }) {
   try {
     const user = await getAuthUser();
@@ -66,9 +77,18 @@ export async function POST(req, { params }) {
   }
 }
 
-// Removing an assignment revokes this team member's access to the event. It
-// deliberately does not delete the member or any photos they previously
-// uploaded, so the admin retains the event record and audit trail.
+/**
+ * DELETE /api/events/[id]/team-members
+ *
+ * Unassigns a team member from an event, revoking their access to it.
+ * As with assignment, the admin may only manage people on their own
+ * roster, never another admin's team member account. Deliberately does
+ * not delete the member or any photos they previously uploaded, so the
+ * admin retains the event record and audit trail.
+ *
+ * Body: { userId }
+ * Response: the event's id, name, and updated team member list.
+ */
 export async function DELETE(req, { params }) {
   try {
     const user = await getAuthUser();

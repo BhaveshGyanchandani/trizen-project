@@ -1,9 +1,16 @@
 "use client";
 
+/**
+ * NOTE: Not used anywhere in this codebase. AppSidebar.jsx (shadcn-based)
+ * is what's actually rendered in the admin and team layouts; this appears
+ * to be an earlier hand-rolled sidebar design kept only for reference.
+ */
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 
+/** Derives up to two initials from a display name for the avatar fallback. */
 function initials(name = "") {
   return name
     .trim()
@@ -32,6 +39,10 @@ const icons = {
   ),
 };
 
+/**
+ * Hand-rolled navigation sidebar with role-based links and a
+ * logout control. Superseded by AppSidebar — see note above.
+ */
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();

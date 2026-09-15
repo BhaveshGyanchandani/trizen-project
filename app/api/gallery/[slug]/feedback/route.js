@@ -6,6 +6,14 @@ import Photo from "@/models/Photo";
 import CustomerPhotoFeedback from "@/models/CustomerPhotoFeedback";
 import { getGalleryAccess } from "@/lib/authHelper";
 
+/**
+ * GET /api/gallery/[slug]/feedback
+ *
+ * Returns the calling gallery visitor's own previously submitted
+ * ratings/comments, scoped to their PIN-verified session. Feedback for
+ * a photo that has since been removed from the published gallery is
+ * filtered out; it is no longer part of the customer view.
+ */
 export async function GET(req, { params }) {
   try {
     const { slug } = await params;
@@ -45,9 +53,17 @@ export async function GET(req, { params }) {
   }
 }
 
-// PIN-verified customers can rate/comment only on photos currently visible
-// in their own published gallery. A repeat submission updates their own
-// feedback instead of creating another record.
+/**
+ * POST /api/gallery/[slug]/feedback
+ *
+ * Submits (or updates) a star rating and optional comment on a photo.
+ * PIN-verified customers can rate/comment only on photos currently
+ * visible in their own published gallery. A repeat submission updates
+ * their own feedback (upsert keyed by photo + session id) instead of
+ * creating another record.
+ *
+ * Body: { photoId, rating (1-5), comment? }
+ */
 export async function POST(req, { params }) {
   try {
     const { slug } = await params;

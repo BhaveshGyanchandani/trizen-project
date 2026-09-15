@@ -6,6 +6,19 @@ import PhotoChangeRequest from "@/models/PhotoChangeRequest";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 import mongoose from "mongoose";
 
+/**
+ * PATCH /api/photo-requests/[id]
+ *
+ * Reviews a pending customer photo-removal request. Admin only,
+ * restricted to the request's owning event's admin, and only while the
+ * request is still PENDING. Approving a request immediately excludes
+ * the photo from the gallery — keeping the original asset/admin
+ * record, but removing it from the live gallery immediately, so it can
+ * never be served publicly while excluded — and also clears its
+ * selection/published flags.
+ *
+ * Body: { status: "APPROVED" | "REJECTED" }
+ */
 export async function PATCH(req, { params }) {
   try {
     const user = await getAuthUser();

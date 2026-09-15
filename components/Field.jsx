@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 
+/** Labeled form field wrapper: renders a label, the field itself, and an optional inline error message. */
 export default function Field({ label, error, children }) {
   return (
     <label className="block">
@@ -17,6 +18,16 @@ export default function Field({ label, error, children }) {
 // The `tone` param is no longer meaningful — this design uses one register
 // throughout — but is kept so existing call sites (`inputClass("ink", ...)`,
 // `inputClass("paper", ...)`) don't all need editing at once.
+/**
+ * Returns the same classes as the real shadcn Input
+ * (components/ui/input.jsx) plus an error state. Kept as a function
+ * (rather than switching every call site to <Input>) because several
+ * forms build a custom input element (e.g. the numeric PIN entry) that
+ * needs these classes merged with extra ones. The `tone` param is no
+ * longer meaningful — this design uses one register throughout — but is
+ * kept so existing call sites (`inputClass("ink", ...)`,
+ * `inputClass("paper", ...)`) don't all need editing at once.
+ */
 export function inputClass(_tone, hasError = false) {
   return cn(
     "h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow]",

@@ -8,6 +8,12 @@ export const metadata = {
   description: "Collect, review, and share event photo galleries.",
 };
 
+/**
+ * Root layout wrapping every page in the app. Loads global fonts/styles
+ * and provides the two app-wide contexts — authentication
+ * (`AuthProvider`) and toast notifications (`ToastProvider`) — so any
+ * page or component can call `useAuth()` / `useToast()`.
+ */
 export default function RootLayout({ children }) {
   return (
     <html lang="en">

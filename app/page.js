@@ -6,6 +6,11 @@ import { Check } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import Button from "@/components/Button";
 
+/**
+ * Public marketing landing page ("/"). Composed of independent
+ * presentational sections below; each adapts its call-to-action based
+ * on whether a session is active (via `useAuth`).
+ */
 export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -19,6 +24,7 @@ export default function Home() {
   );
 }
 
+/** Top nav bar: logo plus auth-aware links (login/register, or dashboard/logout). */
 function SiteHeader() {
   const { user, logout } = useAuth();
 
@@ -59,6 +65,7 @@ function SiteHeader() {
   );
 }
 
+/** Above-the-fold hero section: headline, primary CTA, and a sample photo grid. */
 function Hero() {
   const { user } = useAuth();
 
@@ -130,6 +137,7 @@ function Hero() {
   );
 }
 
+/** Three-step "how it works" explainer section. */
 function HowItWorks() {
   const steps = [
     {
@@ -167,6 +175,7 @@ function HowItWorks() {
   );
 }
 
+/** Grid of product feature highlights. */
 function Features() {
   const features = [
     {
@@ -202,6 +211,7 @@ function Features() {
   );
 }
 
+/** Bottom-of-page call-to-action, mirroring the hero's auth-aware buttons. */
 function ClosingCTA() {
   const { user } = useAuth();
 
@@ -234,6 +244,7 @@ function ClosingCTA() {
   );
 }
 
+/** Minimal site footer. */
 function SiteFooter() {
   return (
     <footer className="border-t border-border">

@@ -5,6 +5,14 @@ import { Check, ImageOff } from "lucide-react";
 import { idOf } from "@/lib/idOf";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Resolves the best available image URL for a photo. Always resolves
+ * through the GridFS-backed API route first — it's the only storage
+ * backend a Photo can point at, and it's what enforces per-photo access
+ * rules (owner/team/published-gallery). storageUrl is a legacy
+ * local-disk field that doesn't survive a serverless deploy; url/secure_url
+ * are kept as a last resort for any hand-shaped test data.
+ */
 function photoUrl(photo) {
   // Always resolve through the GridFS-backed API route first — it's the
   // only storage backend a Photo can point at, and it's what enforces
@@ -19,6 +27,7 @@ function photoUrl(photo) {
   return null;
 }
 
+/** Placeholder grid of skeleton tiles shown while photos are loading. */
 export function PhotoGridSkeleton({ count = 8 }) {
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
@@ -29,6 +38,7 @@ export function PhotoGridSkeleton({ count = 8 }) {
   );
 }
 
+/** A single photo's thumbnail image, with a graceful fallback if it fails to load. */
 function Thumbnail({ photo }) {
   const [failed, setFailed] = useState(false);
   const src = photoUrl(photo);
@@ -54,6 +64,28 @@ function Thumbnail({ photo }) {
   );
 }
 
+/**
+ * Responsive grid of photo thumbnails, shared across the admin curation
+ * view, the team upload/review view, and the public gallery. Behavior
+ * is driven entirely by which props are passed:
+ *
+ * - `selectable` + `selectedIds` + `onToggle` — admin gallery-selection
+ *   mode: each tile shows a check toggle.
+ * - `locked` — marks every photo as already-published (checked, locked
+ *   visual state); overrides `selectable`.
+ * - `onPhotoClick` — clicking a tile opens it (e.g. a lightbox) at
+ *   `index` instead of toggling selection.
+ * - `pendingIds` — photos with an in-flight request are dimmed and
+ *   disabled to prevent duplicate actions.
+ * - `showDetails` — renders a caption under each tile with filename,
+ *   uploader, timestamp, selection state, and any customer feedback
+ *   from `feedbackByPhoto`.
+ * - `actions` (or the single-action shorthand `actionLabel`/`onAction`) —
+ *   renders one or more small action buttons overlaid on each tile
+ *   (e.g. "Delete").
+ * - `startIndex` — offsets the numbered badge shown on each tile, for
+ *   grids rendered in pages/chunks.
+ */
 export default function PhotoGrid({
   photos,
   selectable = false,

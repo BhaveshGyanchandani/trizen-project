@@ -1,7 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 
-// A row of counts inline within an event's detail page — same shadcn Card
-// language as KpiRow, sized smaller for a secondary position on the page.
+/**
+ * Row of counts inline within an event's detail page — same shadcn Card
+ * language as KpiRow, sized smaller for a secondary position on the
+ * page. Entries with an undefined/null `value` are skipped; renders
+ * nothing if none remain.
+ */
 export default function SummaryStrip({ stats }) {
   const visible = stats.filter((s) => s.value !== undefined && s.value !== null);
   if (visible.length === 0) return null;

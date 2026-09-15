@@ -4,6 +4,11 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { getAuthUser } from "@/lib/authHelper";
 
+/**
+ * GET /api/team-members
+ *
+ * Lists the team-member accounts created by the calling admin. Admin only.
+ */
 export async function GET() {
   try {
     const user = await getAuthUser();
@@ -36,6 +41,15 @@ export async function GET() {
   }
 }
 
+/**
+ * POST /api/team-members
+ *
+ * Creates a new team-member (or, less commonly, admin) account under
+ * the calling admin's studio. Admin only.
+ *
+ * Body: { name, email, password, role? }
+ * Response: the created account's public fields.
+ */
 export async function POST(req) {
   try {
     const user = await getAuthUser();

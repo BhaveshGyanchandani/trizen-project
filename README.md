@@ -63,6 +63,10 @@ models/                       — Mongoose schemas: User, Event, Photo
 scripts/seed.cjs               — standalone demo-data script (see above)
 ```
 
+For the full request/response contract of every API route, see
+[`docs/API_SPEC.md`](docs/API_SPEC.md). For how the frontend
+components fit together, see [`docs/COMPONENTS.md`](docs/COMPONENTS.md).
+
 ### Profile management
 
 Both roles can edit their own account from `/profile` (linked from the

@@ -4,6 +4,21 @@ import Event from "@/models/Event";
 import Photo from "@/models/Photo";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 
+/**
+ * PATCH /api/photos/[id]/select
+ *
+ * Admin-only toggle for whether a photo is selected for the gallery.
+ * Already-live (published) photos are locked from this endpoint —
+ * unselecting one requires an explicit unpublish first, since the
+ * customer may have already seen or downloaded it. A photo excluded by
+ * an approved customer removal request also can't be re-selected. Uses
+ * an atomic `findOneAndUpdate` (rather than load-mutate-save) so two
+ * rapid toggles on the same photo can't race into a version-conflict
+ * error, and re-checks the lock conditions in the query itself so a
+ * photo published by a concurrent request still can't be unselected.
+ *
+ * Body: { selected: boolean }
+ */
 export async function PATCH(req, { params }) {
   try {
     const user = await getAuthUser();

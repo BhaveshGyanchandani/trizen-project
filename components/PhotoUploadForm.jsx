@@ -6,12 +6,20 @@ import { photosAPI } from "@/lib/api";
 import { useToast } from "@/lib/useToast";
 import Button from "./Button";
 
+/** Formats a byte count as a short human-readable size (KB or MB). */
 function formatBytes(bytes) {
   if (!bytes) return "";
   const kb = bytes / 1024;
   return kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`;
 }
 
+/**
+ * Drag-and-drop / file-picker upload widget for team members adding
+ * photos to an event. Queues selected files locally (filtering out
+ * non-images), uploads them one at a time with per-file progress and
+ * retry-on-failure, and calls `onUploaded` after any successful upload
+ * so the parent can refresh its photo list.
+ */
 export default function PhotoUploadForm({ eventId, onUploaded }) {
   const [files, setFiles] = useState([]);
   const [dragOver, setDragOver] = useState(false);

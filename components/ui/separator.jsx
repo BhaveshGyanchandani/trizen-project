@@ -1,5 +1,7 @@
 "use client";
 
+/** Visual/semantic divider primitive from shadcn/ui, built on Radix UI. */
+
 import { Separator as SeparatorPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
 

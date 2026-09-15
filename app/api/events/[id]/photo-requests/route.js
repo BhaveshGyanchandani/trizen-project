@@ -4,6 +4,15 @@ import Event from "@/models/Event";
 import PhotoChangeRequest from "@/models/PhotoChangeRequest";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 
+/**
+ * GET /api/events/[id]/photo-requests
+ *
+ * Lists customer photo-removal requests for an event, optionally
+ * filtered by status. Admin only, restricted to the event's owner.
+ *
+ * Query params: status (all|PENDING|APPROVED|REJECTED)
+ * Response: { requests, pendingCount }
+ */
 export async function GET(req, { params }) {
   try {
     const user = await getAuthUser();

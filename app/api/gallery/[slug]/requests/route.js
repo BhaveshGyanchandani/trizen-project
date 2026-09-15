@@ -6,8 +6,18 @@ import PhotoChangeRequest from "@/models/PhotoChangeRequest";
 import { getGalleryAccess } from "@/lib/authHelper";
 import mongoose from "mongoose";
 
-// A PIN-verified gallery visitor may request a change only for a photo that
-// is currently visible in that exact published gallery.
+/**
+ * POST /api/gallery/[slug]/requests
+ *
+ * Submits a customer request to remove a specific photo from the
+ * published gallery. Requires a valid PIN-verified session. A PIN-verified
+ * gallery visitor may request a change only for a photo that is
+ * currently visible in that exact published gallery, and only one
+ * pending request per photo per visitor is allowed at a time.
+ *
+ * Body: { photoId, reason? }
+ * Response: { id, photoId, status, createdAt }
+ */
 export async function POST(req, { params }) {
   try {
     const { slug } = await params;

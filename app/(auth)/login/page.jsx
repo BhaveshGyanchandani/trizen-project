@@ -8,6 +8,11 @@ import { useAuth } from "@/lib/useAuth";
 import Field, { inputClass } from "@/components/Field";
 import Button from "@/components/Button";
 
+/**
+ * Login page ("/login"). Authenticates via `useAuth().login`, then
+ * redirects to the home page, which routes on to the right dashboard
+ * based on the resolved role.
+ */
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();

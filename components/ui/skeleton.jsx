@@ -1,3 +1,4 @@
+/** Loading-placeholder primitive from shadcn/ui. */
 import { cn } from "@/lib/utils";
 
 export function Skeleton({ className, ...props }) {

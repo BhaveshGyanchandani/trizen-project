@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/authHelper";
 
+/**
+ * GET /api/auth/me
+ *
+ * Returns the currently authenticated user's profile, resolved from the
+ * session cookie. Used by the frontend on load to restore session state.
+ *
+ * Response: { id, name, email, role, phone, bio, avatarUrl }
+ */
 export async function GET() {
   try {
     const user = await getAuthUser();

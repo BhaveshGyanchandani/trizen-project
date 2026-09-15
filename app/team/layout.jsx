@@ -7,6 +7,11 @@ import AppSidebar from "@/components/AppSidebar";
 import Loader from "@/components/Loader";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
+/**
+ * Layout for all /team/* routes. Gates access to authenticated team
+ * members only — redirects to /login if logged out, or to /admin if
+ * logged in as an admin — and wraps children in the sidebar shell.
+ */
 export default function TeamLayout({ children }) {
   const { user, status } = useAuth();
   const router = useRouter();

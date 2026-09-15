@@ -4,6 +4,16 @@ import Event from "@/models/Event";
 import Photo from "@/models/Photo";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 
+/**
+ * POST /api/events/[id]/gallery/unpublish
+ *
+ * Takes the gallery offline: flips `galleryPublished` to false and
+ * clears `publishedForGallery` on every photo, since nothing is live
+ * for the customer anymore, so nothing should still read as "already
+ * published" in the admin picker — the next publish starts a clean
+ * slate of selections to review, same as a first publish would. The
+ * PIN hash is left untouched; republishing later reuses it as usual.
+ */
 export async function POST(req, { params }) {
   try {
     const user = await getAuthUser();

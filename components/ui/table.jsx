@@ -1,3 +1,4 @@
+/** Table layout primitives from shadcn/ui: Table/TableHeader/TableBody/TableRow/TableHead/TableCell. */
 import { cn } from "@/lib/utils";
 
 export function Table({ className, ...props }) {

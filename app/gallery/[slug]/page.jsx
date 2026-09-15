@@ -21,6 +21,14 @@ function photoSrc(photo) {
   return photo.storageUrl || photo.url || photo.secure_url;
 }
 
+/**
+ * Public customer gallery page ("/gallery/[slug]"). No auth required.
+ * Shows the gallery name/photo count immediately, gates the actual
+ * photos behind PIN entry, and once unlocked lets the customer browse
+ * photos in a lightbox, rate/comment on them, and request that a photo
+ * be removed — all tied to the browser's PIN-verified session rather
+ * than any account.
+ */
 export default function CustomerGalleryPage({ params }) {
   const { slug } = use(params);
 
@@ -47,6 +55,7 @@ export default function CustomerGalleryPage({ params }) {
       .catch(() => setUnavailable(true));
   }, [slug]);
 
+  /** Verifies the entered PIN and, on success, loads the gallery's photos and the visitor's own prior feedback. */
   const handleVerify = async (pin) => {
     const result = await galleryPublicAPI.verifyPin(slug, pin);
     setPhotos(Array.isArray(result) ? result : result.photos || []);
@@ -60,6 +69,7 @@ export default function CustomerGalleryPage({ params }) {
     }
   };
 
+  /** Opens the rating modal for a photo, pre-filled with the visitor's existing rating/comment if any. */
   const openFeedback = (photo) => {
     const photoId = String(photo.id || photo._id);
     const existing = feedback.find((entry) => String(entry.photoId) === photoId);
@@ -69,6 +79,7 @@ export default function CustomerGalleryPage({ params }) {
     setFeedbackError("");
   };
 
+  /** Submits a photo-removal request for the photo staged in `requestPhoto`. */
   const submitRequest = async () => {
     if (!requestPhoto) return;
     setSubmittingRequest(true);
@@ -85,6 +96,7 @@ export default function CustomerGalleryPage({ params }) {
     }
   };
 
+  /** Submits (or updates) the rating/comment for the photo staged in `feedbackPhoto`. */
   const submitFeedback = async () => {
     if (!feedbackPhoto || !rating) {
       setFeedbackError("Choose a rating from 1 to 5 stars.");

@@ -15,14 +15,22 @@ import Topbar from "@/components/Topbar";
 import { Card } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
+/** Generates a short random password for the "Generate" convenience button. */
 function randomPassword() {
   return Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4);
 }
 
+/** Derives up to two initials from a display name for the avatar chip. */
 function initials(name = "") {
   return name.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
 }
 
+/**
+ * Admin team management page ("/admin/team"). Lists every account the
+ * admin has created (admins and team members), with actions to add a
+ * new account and to permanently remove a team-member account (admin
+ * accounts can't be removed from here).
+ */
 export default function TeamPage() {
   const [members, setMembers] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -30,6 +38,7 @@ export default function TeamPage() {
   const [deletingMemberId, setDeletingMemberId] = useState(null);
   const toast = useToast();
 
+  /** Fetches the admin's full roster of team-member and admin accounts. */
   const load = async () => {
     try {
       const data = await teamMembersAPI.list();
@@ -46,6 +55,7 @@ export default function TeamPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Permanently removes the account staged in `memberToDelete` from the studio. */
   const deleteMember = async () => {
     if (!memberToDelete) return;
     const memberId = idOf(memberToDelete);
@@ -166,6 +176,11 @@ export default function TeamPage() {
   );
 }
 
+/**
+ * Modal for creating a new admin or team-member account. Shows the
+ * generated credentials once after creation, since the password can't
+ * be retrieved again afterward.
+ */
 function AddTeamMemberModal({ open, onClose, onCreated }) {
   const [created, setCreated] = useState(null); // holds { name, email, password, role } after success
   const [role, setRole] = useState("team_member");
@@ -178,6 +193,7 @@ function AddTeamMemberModal({ open, onClose, onCreated }) {
     formState: { errors, isSubmitting },
   } = useForm();
 
+  /** Resets the form and closes the modal. */
   const close = () => {
     reset();
     setCreated(null);
@@ -185,6 +201,7 @@ function AddTeamMemberModal({ open, onClose, onCreated }) {
     onClose();
   };
 
+  /** Creates the account and stages its credentials for the one-time reveal view. */
   const onSubmit = async (values) => {
     const member = await teamMembersAPI.create({ ...values, role });
     onCreated(member);

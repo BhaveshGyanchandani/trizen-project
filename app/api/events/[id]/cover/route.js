@@ -4,8 +4,13 @@ import { openStoredImage } from "@/lib/storage";
 import Event from "@/models/Event";
 import { getAuthUser, isEventOwner, isAssignedToEvent } from "@/lib/authHelper";
 
-// Serves an event cover from Cloudinary after verifying event access. GridFS
-// remains as a legacy fallback while existing covers are migrated.
+/**
+ * GET /api/events/[id]/cover
+ *
+ * Streams an event's cover photo image bytes to admins/team members with
+ * access to the event. Serves from Cloudinary; GridFS remains as a
+ * legacy fallback while existing covers are migrated.
+ */
 export async function GET(req, { params }) {
   try {
     const { id } = await params;

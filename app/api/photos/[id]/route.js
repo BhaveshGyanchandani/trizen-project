@@ -8,8 +8,14 @@ import CustomerPhotoFeedback from "@/models/CustomerPhotoFeedback";
 import PhotoChangeRequest from "@/models/PhotoChangeRequest";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 
-// Permanently remove an event photo. This is intentionally restricted to the
-// event owner; assigned team members can upload but cannot delete assets.
+/**
+ * DELETE /api/photos/[id]
+ *
+ * Permanently removes an event photo: deletes the stored image asset,
+ * any customer feedback/change-request records tied to it, and finally
+ * the Photo document itself. Intentionally restricted to the event
+ * owner; assigned team members can upload but cannot delete assets.
+ */
 export async function DELETE(req, { params }) {
   try {
     const user = await getAuthUser();

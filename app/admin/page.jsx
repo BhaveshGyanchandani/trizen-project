@@ -14,6 +14,11 @@ import Loader from "@/components/Loader";
 import Topbar from "@/components/Topbar";
 import KpiRow from "@/components/KpiRow";
 
+/**
+ * Admin dashboard ("/admin"). Lists every event the logged-in admin
+ * owns, with KPI totals (event count, photos uploaded, galleries live)
+ * and a "Create event" action.
+ */
 export default function AdminDashboard() {
   const [events, setEvents] = useState(null); // null = loading
   const [modalOpen, setModalOpen] = useState(false);
@@ -94,6 +99,7 @@ export default function AdminDashboard() {
   );
 }
 
+/** Modal form for creating a new event by name. */
 function CreateEventModal({ open, onClose, onCreated }) {
   const {
     register,

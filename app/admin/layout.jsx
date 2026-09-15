@@ -7,6 +7,11 @@ import AppSidebar from "@/components/AppSidebar";
 import Loader from "@/components/Loader";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
+/**
+ * Layout for all /admin/* routes. Gates access to authenticated admins
+ * only — redirects to /login if logged out, or to /team if logged in as
+ * a non-admin — and wraps children in the sidebar shell.
+ */
 export default function AdminLayout({ children }) {
   const { user, status } = useAuth();
   const router = useRouter();

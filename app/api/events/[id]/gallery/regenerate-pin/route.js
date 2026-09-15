@@ -4,15 +4,26 @@ import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 
+/**
+ * NOTE: a local duplicate of the same-named helper in lib/galleryPublish.js.
+ * Generates a random 6-digit numeric PIN.
+ */
 function generatePin() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Explicit admin action to invalidate the current PIN and issue a new one,
-// without touching photo selections or the publish state. Use this when a
-// PIN has leaked, was shared with the wrong person, or the admin just wants
-// a fresh one — as opposed to publish/republish, which now deliberately
-// keeps the existing PIN.
+/**
+ * POST /api/events/[id]/gallery/regenerate-pin
+ *
+ * Explicit admin action to invalidate the current PIN and issue a new
+ * one, without touching photo selections or the publish state. Use this
+ * when a PIN has leaked, was shared with the wrong person, or the admin
+ * just wants a fresh one — as opposed to publish/republish, which now
+ * deliberately keeps the existing PIN. Requires the gallery to already
+ * be published.
+ *
+ * Response: { pin } — shown once; not retrievable again after this.
+ */
 export async function POST(req, { params }) {
   try {
     const user = await getAuthUser();

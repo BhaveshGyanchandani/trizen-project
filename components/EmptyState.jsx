@@ -1,5 +1,9 @@
-// `tone` is no longer meaningful (one register throughout) but kept so
-// existing call sites (tone="paper" / tone="ink") don't all need editing.
+/**
+ * Centered placeholder for an empty list/section — a title, optional
+ * description, and an optional action (e.g. a "Create" button).
+ * `tone` is no longer meaningful (one register throughout) but kept so
+ * existing call sites (tone="paper" / tone="ink") don't all need editing.
+ */
 export default function EmptyState({ title, description, action }) {
   return (
     <div className="rounded-xl border border-dashed border-border px-6 py-14 text-center">

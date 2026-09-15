@@ -5,6 +5,7 @@ import User from "@/models/User";
 import { getAuthUser } from "@/lib/authHelper";
 import { validateProfileUpdate } from "@/lib/requestValidation";
 
+/** Shapes a User document into the profile fields returned to the frontend. */
 function serializeUser(user) {
   return {
     id: user._id,
@@ -17,10 +18,15 @@ function serializeUser(user) {
   };
 }
 
-// Both admin and team_member can edit their own profile — this route only
-// ever touches the currently-authenticated user's own document. There is no
-// userId in the body or the URL, so there's nothing here that would let one
-// account edit another's profile even by mistake.
+/**
+ * GET /api/auth/profile
+ *
+ * Returns the currently authenticated user's own profile. Both admin
+ * and team_member can edit their own profile — this route only ever
+ * touches the currently-authenticated user's own document. There is no
+ * userId in the body or the URL, so there's nothing here that would let
+ * one account edit another's profile even by mistake.
+ */
 export async function GET() {
   try {
     const user = await getAuthUser();
@@ -36,6 +42,17 @@ export async function GET() {
   }
 }
 
+/**
+ * PATCH /api/auth/profile
+ *
+ * Updates the current user's own profile. Every field is optional —
+ * send only what changed. A password change requires both
+ * `currentPassword` and `newPassword` together, and is verified against
+ * the stored hash before being applied.
+ *
+ * Body: { name?, email?, phone?, bio?, currentPassword?, newPassword? }
+ * Response: the updated user profile.
+ */
 export async function PATCH(req) {
   try {
     const authUser = await getAuthUser();

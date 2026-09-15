@@ -1,5 +1,13 @@
 import mongoose from "mongoose";
 
+/**
+ * CustomerPhotoFeedback — a star rating and optional comment a gallery
+ * visitor leaves on a single published photo.
+ *
+ * Tied to an anonymous, PIN-verified `customerSessionId` rather than a
+ * user account. The compound unique index below lets a visitor update
+ * their own rating for a photo without ever producing duplicates.
+ */
 const CustomerPhotoFeedbackSchema = new mongoose.Schema(
   {
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: "Event", required: true, index: true },

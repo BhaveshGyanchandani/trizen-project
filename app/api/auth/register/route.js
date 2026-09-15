@@ -5,6 +5,16 @@ import User from "@/models/User";
 import Event from "@/models/Event";
 import { setAuthCookie, getAuthUser } from "@/lib/authHelper";
 
+/**
+ * GET /api/auth/register
+ *
+ * Reports whether any admin account already exists (used by the frontend
+ * to decide whether to show first-run "create the initial admin" setup
+ * vs. a normal registration wall) and, if the caller is logged in,
+ * whether they are an admin.
+ *
+ * Response: { adminExists, isAdmin, user }
+ */
 export async function GET() {
   try {
     await connectDB();
@@ -29,6 +39,19 @@ export async function GET() {
   }
 }
 
+/**
+ * POST /api/auth/register
+ *
+ * Creates a new user account. Before any account exists, this creates
+ * the initial admin and logs them in immediately. Once at least one
+ * account exists, only a logged-in admin may create further accounts
+ * (admin or team_member), and the admin's own session is left active.
+ * A team_member can optionally be assigned to one or more of the
+ * creating admin's events at creation time.
+ *
+ * Body: { name, email, password, role?, eventIds? }
+ * Response: { id, name, email, role }
+ */
 export async function POST(req) {
   try {
     await connectDB();

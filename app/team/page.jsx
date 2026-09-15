@@ -10,6 +10,11 @@ import Loader from "@/components/Loader";
 import Topbar from "@/components/Topbar";
 import KpiRow from "@/components/KpiRow";
 
+/**
+ * Team member dashboard ("/team"). Lists every event the logged-in
+ * team member has been assigned to, linking through to each event's
+ * upload/review workspace.
+ */
 export default function TeamDashboard() {
   const [events, setEvents] = useState(null);
   const toast = useToast();

@@ -1,5 +1,7 @@
 "use client";
 
+/** Slide-out panel (sheet) primitive from shadcn/ui, built on Radix UI. Used as the mobile fallback for the sidebar. */
+
 import { Dialog as SheetPrimitive } from "radix-ui";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";

@@ -4,6 +4,7 @@ import Event from "@/models/Event";
 import Photo from "@/models/Photo";
 import { getAuthUser } from "@/lib/authHelper";
 
+/** Shapes an Event document into the summary fields returned by the events list/create endpoints. */
 function serializeEvent(event, photoCountByEvent) {
   return {
     id: event._id,
@@ -20,6 +21,15 @@ function serializeEvent(event, photoCountByEvent) {
   };
 }
 
+/**
+ * GET /api/events
+ *
+ * Lists events scoped to the caller's role: admins see events they
+ * created, team members see events they're assigned to. Includes each
+ * event's live photo count via a single aggregation pass.
+ *
+ * Response: array of event summaries.
+ */
 export async function GET() {
   try {
     const user = await getAuthUser();
@@ -49,6 +59,14 @@ export async function GET() {
   }
 }
 
+/**
+ * POST /api/events
+ *
+ * Creates a new event. Admin only.
+ *
+ * Body: { name }
+ * Response: the created event summary.
+ */
 export async function POST(req) {
   try {
     const user = await getAuthUser();

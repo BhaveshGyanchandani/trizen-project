@@ -2,6 +2,7 @@ import Link from "next/link";
 import Badge from "./Badge";
 import { idOf } from "@/lib/idOf";
 
+/** Renders an event's cover photo, or a quiet placeholder frame when none is set. */
 function Thumb({ event }) {
   const src = event.coverPhotoUrl;
   if (src) {
@@ -16,6 +17,13 @@ function Thumb({ event }) {
   );
 }
 
+/**
+ * Compact row summarizing one event in a list: thumbnail, name, photo
+ * and team counts, creation date, and gallery status badge. Links to
+ * `href` (typically the event's detail page). Accepts either the
+ * flattened API shape or a couple of legacy nested shapes for the
+ * count/status fields.
+ */
 export default function EventCard({ event, href }) {
   const photoCount = event.photoCount ?? event.photos?.length;
   const teamCount = event.teamMembers?.length ?? event.teamMemberCount;
@@ -47,6 +55,7 @@ export default function EventCard({ event, href }) {
   );
 }
 
+/** Extracts a normalized id from an event object (see lib/idOf.js). */
 export function eventId(event) {
   return idOf(event);
 }

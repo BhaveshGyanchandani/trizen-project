@@ -3,7 +3,13 @@ import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import Photo from "@/models/Photo";
 
-// Public, no auth — metadata only, no PIN required yet.
+/**
+ * GET /api/gallery/[slug]
+ *
+ * Public, no auth — returns only the event name and live photo count so
+ * the gallery landing page can render before the PIN is entered.
+ * Metadata only, no PIN required yet.
+ */
 export async function GET(req, { params }) {
   try {
     const { slug } = await params;

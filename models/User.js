@@ -1,5 +1,13 @@
 import mongoose from "mongoose";
 
+/**
+ * User account — either a studio admin or a team member created by one.
+ *
+ * Admins own events and the team roster; team members are scoped to the
+ * events an admin assigns them to. Passwords are stored as bcrypt hashes
+ * (hashing happens at the route layer, not here). Avatar images are held
+ * in Cloudinary; only the resulting metadata lives on this document.
+ */
 const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },

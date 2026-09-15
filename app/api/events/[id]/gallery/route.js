@@ -3,8 +3,13 @@ import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import { getAuthUser, isEventOwner } from "@/lib/authHelper";
 
-// Status only — the PIN itself is never returned here. It's only ever
-// shown once, in the publish response, right after it's generated.
+/**
+ * GET /api/events/[id]/gallery
+ *
+ * Returns the gallery's publish status and slug for the admin dashboard.
+ * Status only — the PIN itself is never returned here. It's only ever
+ * shown once, in the publish response, right after it's generated.
+ */
 export async function GET(req, { params }) {
   try {
     const user = await getAuthUser();

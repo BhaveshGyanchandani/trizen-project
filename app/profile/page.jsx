@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
 
+/** Derives up to two initials from a display name for the avatar fallback. */
 function initials(name = "") {
   return (
     name
@@ -64,6 +65,7 @@ export default function ProfilePage() {
   );
 }
 
+/** Card for viewing, changing, or removing the current user's avatar photo. */
 function AvatarCard({ user, onUpdated }) {
   const [busy, setBusy] = useState(false);
   const fileRef = useRef(null);
@@ -71,6 +73,7 @@ function AvatarCard({ user, onUpdated }) {
 
   const pickFile = () => fileRef.current?.click();
 
+  /** Uploads the chosen file as the new avatar. */
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -87,6 +90,7 @@ function AvatarCard({ user, onUpdated }) {
     }
   };
 
+  /** Removes the current avatar. */
   const removeAvatar = async () => {
     setBusy(true);
     try {
@@ -153,6 +157,7 @@ function AvatarCard({ user, onUpdated }) {
   );
 }
 
+/** Card for editing name, email, phone, and bio. Save is disabled until the form has unsaved changes. */
 function DetailsCard({ user, onUpdated, onSaved }) {
   const toast = useToast();
   const {
@@ -212,6 +217,7 @@ function DetailsCard({ user, onUpdated, onSaved }) {
   );
 }
 
+/** Card for changing the current user's password, requiring the current password for verification. */
 function PasswordCard() {
   const toast = useToast();
   const {

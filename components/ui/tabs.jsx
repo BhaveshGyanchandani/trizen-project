@@ -1,5 +1,7 @@
 "use client";
 
+/** Tabs primitive from shadcn/ui, built on Radix UI. */
+
 import { Tabs as TabsPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
 

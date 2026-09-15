@@ -1,10 +1,17 @@
 "use client";
 
+/**
+ * NOTE: Not used anywhere in this codebase. AppSidebar.jsx (shadcn-based)
+ * is what's actually rendered in the admin and team layouts; this appears
+ * to be a superseded top-nav design kept only for reference.
+ */
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import Badge from "./Badge";
 
+/** Top navigation bar with role-based links, user badge, and logout. Superseded by AppSidebar — see note above. */
 export default function Navbar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();

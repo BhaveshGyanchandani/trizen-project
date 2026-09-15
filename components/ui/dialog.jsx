@@ -1,5 +1,7 @@
 "use client";
 
+/** Dialog (modal) primitive from shadcn/ui, built on Radix UI for accessible focus-trapping and Escape-to-close. */
+
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";

@@ -6,24 +6,30 @@ import Photo from "@/models/Photo";
 import { getAuthUser, getGalleryAccess } from "@/lib/authHelper";
 import { canReadPhoto } from "@/lib/accessControl";
 
-// Serves an authorized photo from Cloudinary. The signed Cloudinary URL is
-// fetched server-side so it never appears in browser markup; this preserves
-// the existing role and PIN access controls. Legacy GridFS records keep
-// working until the migration script has moved them.
-//
-// Three separate audiences load images through here, and only one of them
-// has a session cookie:
-//   1. The owning admin, reviewing all photos on their event.
-//   2. A team member, viewing photos they uploaded.
-//   3. A customer on a published gallery page — reached the photo list via
-//      POST /api/gallery/[slug]/verify-pin, which has no ongoing session;
-//      the PIN check happens once, up front, and the returned photo URLs
-//      are then loaded as plain <img> tags. So this route has to allow
-//      unauthenticated reads too, but ONLY for a photo that is currently
-//      selectedForGallery on an event whose gallery is currently published
-//      — that's the equivalent of the old "unguessable /uploads/<uuid>
-//      filename" gate, scoped to exactly the photos a customer is meant to
-//      see. Anything else requires a real session via canAccessEventPhotos.
+/**
+ * GET /api/photos/[id]/file
+ *
+ * Serves an authorized photo's image bytes from Cloudinary. The signed
+ * Cloudinary URL is fetched server-side so it never appears in browser
+ * markup; this preserves the existing role and PIN access controls.
+ * Legacy GridFS records keep working until the migration script has
+ * moved them.
+ *
+ * Three separate audiences load images through here, and only one of
+ * them has a session cookie:
+ *   1. The owning admin, reviewing all photos on their event.
+ *   2. A team member, viewing photos they uploaded.
+ *   3. A customer on a published gallery page — reached the photo list
+ *      via POST /api/gallery/[slug]/verify-pin, which has no ongoing
+ *      session; the PIN check happens once, up front, and the returned
+ *      photo URLs are then loaded as plain <img> tags. So this route
+ *      has to allow unauthenticated reads too, but ONLY for a photo
+ *      that is currently selectedForGallery on an event whose gallery
+ *      is currently published — that's the equivalent of the old
+ *      "unguessable /uploads/<uuid> filename" gate, scoped to exactly
+ *      the photos a customer is meant to see. Anything else requires a
+ *      real session via canReadPhoto.
+ */
 export async function GET(req, { params }) {
   try {
     const { id } = await params;

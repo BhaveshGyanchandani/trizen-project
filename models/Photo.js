@@ -1,5 +1,15 @@
 import mongoose from "mongoose";
 
+/**
+ * Photo — a single image uploaded to an event by a team member.
+ *
+ * Image bytes are stored in Cloudinary (`storageProvider: "cloudinary"`);
+ * the legacy `gridfsId` path is kept only until the migration script has
+ * moved every pre-existing asset. `selectedForGallery`,
+ * `publishedForGallery`, and `excludedFromGallery` together drive the
+ * admin curation → publish → customer-feedback lifecycle described next
+ * to each field below.
+ */
 const PhotoSchema = new mongoose.Schema(
   {
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: "Event", required: true, index: true },

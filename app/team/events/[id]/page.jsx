@@ -11,6 +11,14 @@ import PhotoUploadForm from "@/components/PhotoUploadForm";
 import EmptyState from "@/components/EmptyState";
 import Topbar from "@/components/Topbar";
 
+/**
+ * Team member's event workspace ("/team/events/[id]"). Lets an assigned
+ * team member upload new photos and review the combined set of their
+ * own uploads plus any photos already live in the published gallery
+ * (per the GET /api/events/[id]/photos access rules), including
+ * customer feedback where available, with a lightbox for full-size
+ * viewing.
+ */
 export default function TeamEventDetail({ params }) {
   const { id } = use(params);
   const toast = useToast();
@@ -21,6 +29,7 @@ export default function TeamEventDetail({ params }) {
   const [forbidden, setForbidden] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
 
+  /** Fetches this team member's visible photos for the event, plus feedback on them. */
   const loadPhotos = async () => {
     try {
       const [data, feedbackData] = await Promise.all([

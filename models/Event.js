@@ -1,5 +1,13 @@
 import mongoose from "mongoose";
 
+/**
+ * Event — a shoot owned by an admin, worked on by an assigned team, and
+ * optionally published as a PIN-protected public gallery.
+ *
+ * Cover photo bytes live in Cloudinary; this document stores only the
+ * resulting asset metadata. `galleryPinHash` guards public access to the
+ * gallery and is described in detail below, next to its field.
+ */
 const EventSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },

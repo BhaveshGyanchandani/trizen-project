@@ -4,6 +4,7 @@ import User from "@/models/User";
 import { getAuthUser } from "@/lib/authHelper";
 import { saveUploadedFile, deleteUploadedFile } from "@/lib/storage";
 
+/** Shapes a User document into the profile fields returned to the frontend. */
 function serializeUser(user) {
   return {
     id: user._id,
@@ -16,11 +17,20 @@ function serializeUser(user) {
   };
 }
 
-// Self-service only: there is no userId param, and none is accepted from the
-// body — this always writes to req.cookies' own authenticated user, the
-// same boundary /api/auth/profile uses. Uploads go through the same
-// Cloudinary path (saveUploadedFile) as event photos and event covers, so
-// avatar bytes never touch MongoDB either.
+/**
+ * POST /api/auth/avatar
+ *
+ * Uploads (or replaces) the current user's own avatar image. Self-service
+ * only: there is no userId param, and none is accepted from the body —
+ * this always writes to req.cookies' own authenticated user, the same
+ * boundary /api/auth/profile uses. Uploads go through the same
+ * Cloudinary path (saveUploadedFile) as event photos and event covers, so
+ * avatar bytes never touch MongoDB either. Any previous avatar is deleted
+ * from storage after the new one saves successfully.
+ *
+ * Body: multipart/form-data with an `avatar` file field.
+ * Response: the updated user profile.
+ */
 export async function POST(req) {
   try {
     const authUser = await getAuthUser();
@@ -83,7 +93,12 @@ export async function POST(req) {
   }
 }
 
-// Removes the avatar without touching any other profile field.
+/**
+ * DELETE /api/auth/avatar
+ *
+ * Removes the current user's avatar (storage asset and profile fields)
+ * without touching any other profile field.
+ */
 export async function DELETE() {
   try {
     const authUser = await getAuthUser();

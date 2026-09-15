@@ -6,6 +6,7 @@ import { getAuthUser, isEventOwner, canAccessEventPhotos } from "@/lib/authHelpe
 import { deleteUploadedFile, saveUploadedFile } from "@/lib/storage";
 import mongoose from "mongoose";
 
+/** Shapes a Photo document into the fields returned by this route's list/upload responses. */
 function serializePhoto(photo) {
   return {
     id: photo._id,
@@ -23,10 +24,18 @@ function serializePhoto(photo) {
   };
 }
 
-// Admins can filter every photo on an event. Team members receive their own
-// uploads plus photos currently visible in the published gallery, so they can
-// see what has already been delivered without gaining access to other team's
-// unpublished work.
+/**
+ * GET /api/events/[id]/photos
+ *
+ * Lists an event's photos. Admins can filter every photo on an event by
+ * selection status and uploader. Team members receive their own
+ * uploads plus photos currently visible in the published gallery, so
+ * they can see what has already been delivered without gaining access
+ * to other team members' unpublished work.
+ *
+ * Query params (admin only): status (all|selected|unselected), uploadedBy (userId|all)
+ * Response: { photos, summary: { total, selected, unselected, status, uploadedBy } }
+ */
 export async function GET(req, { params }) {
   try {
     const user = await getAuthUser();
@@ -93,7 +102,19 @@ export async function GET(req, { params }) {
   }
 }
 
-// Owning admin or an assigned team member can upload.
+/**
+ * POST /api/events/[id]/photos
+ *
+ * Uploads one or more photos to an event. Owning admin or an assigned
+ * team member can upload. Files are processed independently so a
+ * failure on one does not block the others; each result records
+ * whether it failed at the storage stage or the database stage, and
+ * cleans up the Cloudinary asset if the database write fails after a
+ * successful upload.
+ *
+ * Body: multipart/form-data with one or more `photos` file fields.
+ * Response: { results, uploadedCount, failedCount }
+ */
 export async function POST(req, { params }) {
   try {
     const user = await getAuthUser();

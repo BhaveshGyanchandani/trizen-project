@@ -1,3 +1,9 @@
+/**
+ * NOTE: Unused leftover Vite scaffold. This project's actual dev/build/start
+ * scripts (see package.json) all run Next.js; nothing imports src/App.jsx,
+ * and index.html / vite.config.js are not part of the Next.js build. This
+ * is the default `create-vite` React template, seemingly never removed.
+ */
 import { useState } from 'react'
 import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'

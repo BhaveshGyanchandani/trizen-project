@@ -1,3 +1,4 @@
+/** Centered, single-column layout shared by the login and register pages. */
 export default function AuthLayout({ children }) {
   return (
     <div className="min-h-screen bg-background text-foreground">

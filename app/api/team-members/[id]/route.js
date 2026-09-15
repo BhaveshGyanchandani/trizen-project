@@ -6,8 +6,14 @@ import User from "@/models/User";
 import { getAuthUser } from "@/lib/authHelper";
 import { canManageTeamMember } from "@/lib/accessControl";
 
-// Removes a team-member account from the admin's studio. Event assets are
-// intentionally retained so deleting an account never deletes event photos.
+/**
+ * DELETE /api/team-members/[id]
+ *
+ * Removes a team-member account from the admin's studio: unassigns them
+ * from every event owned by this admin, then deletes the account.
+ * Event assets are intentionally retained so deleting an account never
+ * deletes event photos.
+ */
 export async function DELETE(req, { params }) {
   try {
     const admin = await getAuthUser();

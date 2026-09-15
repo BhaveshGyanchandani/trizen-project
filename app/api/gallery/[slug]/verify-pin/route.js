@@ -8,11 +8,25 @@ import { isValidGalleryPin } from "@/lib/galleryPolicy";
 import { checkRateLimit, clientIpFromRequest } from "@/lib/rateLimit";
 import { randomUUID } from "crypto";
 
-// A 6-digit PIN only has 1,000,000 combinations, so this endpoint is the one
-// place in the app an attacker could plausibly brute-force without ever
-// having a real account. Throttle by slug+IP: a wrong guess still counts
-// against the limit (bad PINs are exactly what we're rate-limiting), a
-// correct guess does not need to since it already ends the attack.
+/**
+ * POST /api/gallery/[slug]/verify-pin
+ *
+ * Verifies a customer-entered gallery PIN and, on success, issues the
+ * signed gallery-access cookie and returns the gallery's live photos.
+ *
+ * A 6-digit PIN only has 1,000,000 combinations, so this endpoint is
+ * the one place in the app an attacker could plausibly brute-force
+ * without ever having a real account. Throttled by slug+IP: a wrong
+ * guess still counts against the limit (bad PINs are exactly what
+ * we're rate-limiting), a correct guess does not need to since it
+ * already ends the attack. Reuses the visitor's existing anonymous
+ * session id across repeat verifications (e.g. after a page refresh)
+ * so feedback — uniquely keyed by photo + customerSessionId — doesn't
+ * fragment into duplicate records for the same visitor.
+ *
+ * Body: { pin }
+ * Response: { eventName, photos }
+ */
 export async function POST(req, { params }) {
   try {
     const { slug } = await params;

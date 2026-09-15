@@ -4,6 +4,13 @@ import Event from "@/models/Event";
 import Photo from "@/models/Photo";
 import { getAuthUser, canAccessEventPhotos } from "@/lib/authHelper";
 
+/**
+ * GET /api/events/[id]/photos/mine
+ *
+ * Lists only the photos the calling team member uploaded to this event
+ * (as opposed to GET /photos, which for team members also includes
+ * already-published gallery photos from the whole team).
+ */
 export async function GET(req, { params }) {
   try {
     const user = await getAuthUser();

@@ -16,6 +16,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 
+/** Derives up to two initials from a display name for the avatar fallback. */
 function initials(name = "") {
   return (
     name
@@ -27,6 +28,12 @@ function initials(name = "") {
   );
 }
 
+/**
+ * Primary app navigation sidebar (shadcn-based), rendered in both the
+ * admin and team layouts. Shows role-appropriate links (Events/Team for
+ * admins, just Events for team members), the current user's identity
+ * with avatar, and a logout action. Renders nothing while logged out.
+ */
 export default function AppSidebar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();

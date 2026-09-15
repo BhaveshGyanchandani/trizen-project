@@ -5,8 +5,13 @@ import Photo from "@/models/Photo";
 import CustomerPhotoFeedback from "@/models/CustomerPhotoFeedback";
 import { getAuthUser, isEventOwner, isAssignedToEvent } from "@/lib/authHelper";
 
-// Admins see feedback across their event. Assigned team members see only
-// feedback on their own uploads, matching their photo-access boundary.
+/**
+ * GET /api/events/[id]/photo-feedback
+ *
+ * Lists customer star ratings/comments on an event's photos. Admins see
+ * feedback across their event. Assigned team members see only feedback
+ * on their own uploads, matching their photo-access boundary.
+ */
 export async function GET(req, { params }) {
   try {
     const user = await getAuthUser();

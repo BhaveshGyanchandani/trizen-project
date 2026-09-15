@@ -4,12 +4,17 @@ import { openStoredImage } from "@/lib/storage";
 import User from "@/models/User";
 import { getAuthUser } from "@/lib/authHelper";
 
-// Any authenticated user (admin or team member) can view another user's
-// avatar — the same trust boundary already applies to `member.name` in the
-// team list and `uploadedBy.name` on every photo, so an avatar image isn't
-// more sensitive than that. Anonymous customers on a public gallery never
-// call this route; galleries only ever serve photo images, not uploader
-// avatars, so there's no unauthenticated path in here at all.
+/**
+ * GET /api/auth/avatar/[userId]
+ *
+ * Streams another user's avatar image. Any authenticated user (admin or
+ * team member) can view another user's avatar — the same trust boundary
+ * already applies to `member.name` in the team list and
+ * `uploadedBy.name` on every photo, so an avatar image isn't more
+ * sensitive than that. Anonymous customers on a public gallery never
+ * call this route; galleries only ever serve photo images, not uploader
+ * avatars, so there's no unauthenticated path in here at all.
+ */
 export async function GET(req, { params }) {
   try {
     const { userId } = await params;

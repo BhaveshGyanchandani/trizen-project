@@ -1,5 +1,10 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
+/**
+ * Sticky page header used at the top of every admin/team screen: a
+ * mobile sidebar trigger, an optional eyebrow label, the page title,
+ * and an optional right-aligned actions slot via `children`.
+ */
 export default function Topbar({ eyebrow, title, children }) {
   return (
     <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-border bg-background/95 px-5 py-4 backdrop-blur-sm sm:px-8">

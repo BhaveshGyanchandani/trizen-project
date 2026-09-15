@@ -4,6 +4,7 @@ import Event from "@/models/Event";
 import { getAuthUser, isEventOwner, isAssignedToEvent } from "@/lib/authHelper";
 import { saveUploadedFile, deleteUploadedFile } from "@/lib/storage";
 
+/** Shapes an Event document into the detail fields returned by this route. */
 function serializeEvent(event) {
   return {
     id: event._id,
@@ -19,6 +20,14 @@ function serializeEvent(event) {
   };
 }
 
+/**
+ * GET /api/events/[id]
+ *
+ * Fetches a single event's detail. Admins may access events they own;
+ * team members only events they're assigned to.
+ *
+ * Response: event detail (name, team, gallery status, cover URL).
+ */
 export async function GET(req, { params }) {
   try {
     const user = await getAuthUser();
@@ -51,10 +60,18 @@ export async function GET(req, { params }) {
   }
 }
 
-// Admin-only: rename the event and/or replace its cover photo. Team
-// members never see the control that calls this in the UI, and the API
-// enforces the same restriction independently — the frontend check alone
-// is never the real security boundary.
+/**
+ * PATCH /api/events/[id]
+ *
+ * Renames the event and/or replaces its cover photo. Admin-only, and
+ * restricted to the event's owning admin. Team members never see the
+ * control that calls this in the UI, and the API enforces the same
+ * restriction independently — the frontend check alone is never the
+ * real security boundary. Accepts either JSON (`{ name }`) or
+ * multipart/form-data (`name` field and/or a `coverPhoto` file). A
+ * previous cover photo is deleted from storage only after the new one
+ * saves successfully.
+ */
 export async function PATCH(req, { params }) {
   try {
     const user = await getAuthUser();

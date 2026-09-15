@@ -1,5 +1,7 @@
 "use client";
 
+/** Dropdown menu primitive from shadcn/ui, built on Radix UI. */
+
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
 

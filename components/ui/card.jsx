@@ -1,3 +1,4 @@
+/** Card primitive from shadcn/ui: Card/CardHeader/CardTitle/CardDescription/CardContent/CardFooter layout pieces. */
 import { cn } from "@/lib/utils";
 
 export function Card({ className, ...props }) {
