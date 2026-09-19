@@ -35,13 +35,13 @@ jobs:
           cache: 'npm'                        # Caches npm dependencies between runs to speed up future builds
 
       - name: Install Dependencies
-        run: npm ci                          # Installs exact dependency versions from package-lock.json (faster & more reliable than `npm install` in CI)
+        run: npm ci                          # Installs exact dependency versions from package-lock.json
 
       - name: Run Linter
-        run: npm run lint                    # Runs ESLint (or whatever your `lint` script is) to catch style/code-quality issues
+        run: npm run lint                    # Runs ESLint to catch style/code-quality issues
 
       - name: Run Unit Tests
-        run: npm test                        # Runs your test suite (e.g. Jest) to catch broken functionality
+        run: npm test                        # Runs test suite
 
   # ─────────────────────────────────────────────
   # JOB 2: Build
@@ -51,16 +51,16 @@ jobs:
   build:
     name: Build Next.js Application
     runs-on: ubuntu-latest
-    needs: lint-and-test                     # This job WAITS for lint-and-test to succeed before starting — enforces pipeline order
+    needs: lint-and-test                     # This job WAITS for lint-and-test to succeed before starting
 
     env:
       JWT_SECRET: "ci_test_jwt_secret_key_2026"
       MONGODB_URI: "mongodb://127.0.0.1:27017/trizen_test"
-      NEXT_PUBLIC_APP_URL: "http://localhost:5000"        # Public-facing URL used during build (e.g. for API calls baked into the frontend)
+      NEXT_PUBLIC_APP_URL: "http://localhost:5000"
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4            # Fresh checkout again — each job runs on its own separate VM, so nothing is shared automatically
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -72,24 +72,47 @@ jobs:
         run: npm ci
 
       - name: Build Next.js Application
-        run: npm run build                   # Runs `next build` — compiles the app for production, catches build-time errors (type errors, import issues, etc.)
+        run: npm run build                   # Runs `next build`
 
   # ─────────────────────────────────────────────
-  # JOB 3 (DISABLED): Deploy
+  # JOB 3: Deploy to Vercel
   # Purpose: Automatically deploy to production AFTER build succeeds
-  # Currently commented out — enable once you add a VERCEL_TOKEN secret in GitHub repo settings
+  # Requires VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID configured in GitHub Repository Secrets
   # ─────────────────────────────────────────────
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
-    environment: VERCEL_TOKEN
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-      - name: Deploy to Vercel
-        run: npx vercel --token=${{ secrets.VERCEL_TOKEN }} --prod
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build Project Artifacts for Vercel
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy Prebuilt Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
