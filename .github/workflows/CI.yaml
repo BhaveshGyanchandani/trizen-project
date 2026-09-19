@@ -6,7 +6,7 @@ on:
     branches: [ main, master, dev ]        # Runs automatically whenever code is pushed to these branches
   pull_request:
     branches: [ main, master, dev ]        # Runs whenever a PR is opened/updated targeting these branches
-  workflow_dispatch:                        # Allows manually triggering this workflow from the GitHub Actions UI (no code push needed)
+  workflow_dispatch:                        # Allows manually triggering this workflow from the GitHub Actions UI
 
 jobs:
 
@@ -16,42 +16,39 @@ jobs:
   # ─────────────────────────────────────────────
   lint-and-test:
     name: Lint & Unit Tests
-    runs-on: ubuntu-latest                  # Runs on a fresh Ubuntu virtual machine provided by GitHub
+    runs-on: ubuntu-latest
 
-    # Environment variables available to all steps in this job
-    # These are dummy/test values used ONLY inside the CI environment — not real production secrets
     env:
-      JWT_SECRET: "ci_test_jwt_secret_key_2026"          # Fake JWT secret so auth-related code doesn't crash during tests
-      MONGODB_URI: "mongodb://127.0.0.1:27017/trizen_test" # Points to a local/test Mongo instance, not the real DB
+      JWT_SECRET: "ci_test_jwt_secret_key_2026"
+      MONGODB_URI: "mongodb://127.0.0.1:27017/trizen_test"
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4            # Pulls your repo's code onto the runner so later steps can access it
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20                   # Installs Node.js v20 on the runner
-          cache: 'npm'                        # Caches npm dependencies between runs to speed up future builds
+          node-version: 20
+          cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci                          # Installs exact dependency versions from package-lock.json
+        run: npm ci
 
       - name: Run Linter
-        run: npm run lint                    # Runs ESLint to catch style/code-quality issues
+        run: npm run lint
 
       - name: Run Unit Tests
-        run: npm test                        # Runs test suite
+        run: npm test
 
   # ─────────────────────────────────────────────
   # JOB 2: Build
-  # Purpose: Confirm the app actually compiles/builds successfully
-  # Only runs if Job 1 (lint-and-test) passes, thanks to `needs:` below
+  # Purpose: Confirm the app compiles/builds successfully
   # ─────────────────────────────────────────────
   build:
     name: Build Next.js Application
     runs-on: ubuntu-latest
-    needs: lint-and-test                     # This job WAITS for lint-and-test to succeed before starting
+    needs: lint-and-test
 
     env:
       JWT_SECRET: "ci_test_jwt_secret_key_2026"
@@ -72,7 +69,7 @@ jobs:
         run: npm ci
 
       - name: Build Next.js Application
-        run: npm run build                   # Runs `next build`
+        run: npm run build
 
   # ─────────────────────────────────────────────
   # JOB 3: Deploy to Vercel
@@ -93,26 +90,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy to Vercel
+        run: npx vercel --token=${{ secrets.VERCEL_TOKEN }} --prod --yes
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-      - name: Build Project Artifacts for Vercel
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-      - name: Deploy Prebuilt Artifacts to Vercel
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
