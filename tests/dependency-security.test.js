@@ -20,3 +20,9 @@ test("undici resolves to the CVE-fixed version (GHSA-xjj6-f33q-929c)", () => {
     assert.equal(lockfile.packages[key].version, "6.29.1");
   }
 });
+
+test("mongoose resolves to the CVE-fixed version (GHSA-8332-j7wj-wjw4, GHSA-gg4r-jv3p-qx3c)", () => {
+  const mongoose = lockfile.packages["node_modules/mongoose"];
+  assert.ok(mongoose, "mongoose entry should exist in package-lock.json");
+  assert.equal(mongoose.version, "9.11.4");
+});
